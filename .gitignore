@@ -39,3 +39,49 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Frontend
+frontend/.next/
+frontend/node_modules/
+frontend/.env.local
+
+# Backend
+backend/venv/
+backend/.env
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Misc
+uploads/
+*.jpeg
+*.jpg
+*.png
+Render DB Migration.txt
+
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
