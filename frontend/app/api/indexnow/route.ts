@@ -61,20 +61,21 @@ export async function POST(request: Request) {
   }
 }
 
-// Example usage from your code:
- fetch('/api/indexnow', {
-   method: 'POST',
-   headers: { 'Content-Type': 'application/json' },
-   body: JSON.stringify({
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+await fetch(`${baseUrl}/api/indexnow`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
     urls: [
-       'https://ricrene.co.tz/services/web-development',
-       'https://ricrene.co.tz/services/domain-hosting',
-       'https://ricrene.co.tz/services/website-maintenance',
-       'https://ricrene.co.tz/services/custom-systems',
-       'https://ricrene.co.tz/services/data-analysis',
-       'https://ricrene.co.tz/services/corporate-email',
-       'https://ricrene.co.tz/services/seo-digital-marketing',
-       'https://ricrene.co.tz/services/digital-solutions',
-     ],      
-   })
+      'https://ricrene.co.tz/services/web-development',
+      'https://ricrene.co.tz/services/domain-hosting',
+      'https://ricrene.co.tz/services/website-maintenance',
+      'https://ricrene.co.tz/services/custom-systems',
+      'https://ricrene.co.tz/services/data-analysis',
+      'https://ricrene.co.tz/services/corporate-email',
+      'https://ricrene.co.tz/services/seo-digital-marketing',
+      'https://ricrene.co.tz/services/digital-solutions',
+    ],
+  }),
 });
