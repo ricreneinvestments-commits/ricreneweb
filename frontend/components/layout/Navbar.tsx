@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
+import type { User } from "@/lib/auth";
+
+// ── Static data ───────────────────────────────────────────────────────────────
 
 const serviceCategories = [
   {
@@ -34,9 +37,17 @@ const serviceCategories = [
   },
 ];
 
-// ── Avatar: shows initials in a red circle ────────────────────────────────────
+const dropdownLinks = [
+  { href: "/dashboard",          label: "My Dashboard", icon: "M3 7h18M3 12h18M3 17h18" },
+  { href: "/dashboard/payments", label: "Payments",     icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" },
+  { href: "/dashboard/invoices", label: "Invoices",     icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+  { href: "/dashboard/profile",  label: "Profile",      icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+];
+
+// ── Standalone components (must be OUTSIDE Navbar to satisfy eslint) ──────────
+
 function UserAvatar({ firstName, lastName }: { firstName: string; lastName: string }) {
-  const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase();
+  const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   return (
     <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold select-none">
       {initials}
@@ -44,66 +55,175 @@ function UserAvatar({ firstName, lastName }: { firstName: string; lastName: stri
   );
 }
 
+interface AuthButtonProps {
+  user: User | null;
+  loading: boolean;
+  isUserMenuOpen: boolean;
+  userButtonRef: React.RefObject<HTMLButtonElement | null>;
+  userMenuRef: React.RefObject<HTMLDivElement | null>;
+  onToggleUserMenu: () => void;
+  onCloseUserMenu: () => void;
+  onLogout: () => void;
+}
+
+function AuthButton({
+  user,
+  loading,
+  isUserMenuOpen,
+  userButtonRef,
+  userMenuRef,
+  onToggleUserMenu,
+  onCloseUserMenu,
+  onLogout,
+}: AuthButtonProps) {
+  // Placeholder while restoring session — prevents layout shift
+  if (loading) return <div className="w-16 h-8" />;
+
+  // Logged in — avatar + dropdown
+  if (user) {
+    return (
+      <div className="relative">
+        <button
+          ref={userButtonRef}
+          onClick={onToggleUserMenu}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-all"
+        >
+          <UserAvatar firstName={user.first_name} lastName={user.last_name} />
+          <span className="text-sm font-medium text-gray-700">{user.first_name}</span>
+          <svg
+            className={`w-3.5 h-3.5 text-gray-500 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {isUserMenuOpen && (
+          <div
+            ref={userMenuRef}
+            className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200/60 overflow-hidden z-50 animate-in-fast"
+          >
+            {/* User info header */}
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <p className="text-sm font-semibold text-gray-900">
+                {user.first_name} {user.last_name}
+              </p>
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+
+            {/* Nav links */}
+            <div className="py-1">
+              {dropdownLinks.map(({ href, label, icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onCloseUserMenu}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+                  </svg>
+                  {label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Sign out */}
+            <div className="border-t border-gray-100 py-1">
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Not logged in — simple Login link
+  return (
+    <Link
+      href="/login"
+      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
+    >
+      Login
+    </Link>
+  );
+}
+
+// ── Navbar ────────────────────────────────────────────────────────────────────
+
 export default function Navbar() {
-  const [isMobileOpen, setIsMobileOpen]   = useState(false);
+  const [isMobileOpen,   setIsMobileOpen]   = useState(false);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [scrolled, setScrolled]           = useState(false);
+  const [scrolled,       setScrolled]       = useState(false);
 
-  const megaMenuRef      = useRef<HTMLDivElement>(null);
+  const megaMenuRef       = useRef<HTMLDivElement>(null);
   const servicesButtonRef = useRef<HTMLButtonElement>(null);
-  const userMenuRef      = useRef<HTMLDivElement>(null);
-  const userButtonRef    = useRef<HTMLButtonElement>(null);
+  const userMenuRef       = useRef<HTMLDivElement>(null);
+  const userButtonRef     = useRef<HTMLButtonElement>(null);
 
   const { user, loading, logout } = useAuth();
 
-  // ── Scroll listener ──────────────────────────────────────────────────────
+  // Scroll detection
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 100);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 100);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ── Close mega menu on outside click ────────────────────────────────────
+  // Close mega menu on outside click
   useEffect(() => {
-    const handleClickOutside = (event: Event) => {
-      const target = event.target as Node;
+    const handler = (e: Event) => {
+      const t = e.target as Node;
       if (
-        megaMenuRef.current && !megaMenuRef.current.contains(target) &&
-        servicesButtonRef.current && !servicesButtonRef.current.contains(target)
-      ) setIsMegaMenuOpen(false);
+        megaMenuRef.current &&
+        !megaMenuRef.current.contains(t) &&
+        servicesButtonRef.current &&
+        !servicesButtonRef.current.contains(t)
+      ) {
+        setIsMegaMenuOpen(false);
+      }
     };
-    if (isMegaMenuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (isMegaMenuOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [isMegaMenuOpen]);
 
-  // ── Close user menu on outside click ────────────────────────────────────
+  // Close user menu on outside click
   useEffect(() => {
-    const handleClickOutside = (event: Event) => {
-      const target = event.target as Node;
+    const handler = (e: Event) => {
+      const t = e.target as Node;
       if (
-        userMenuRef.current && !userMenuRef.current.contains(target) &&
-        userButtonRef.current && !userButtonRef.current.contains(target)
-      ) setIsUserMenuOpen(false);
+        userMenuRef.current &&
+        !userMenuRef.current.contains(t) &&
+        userButtonRef.current &&
+        !userButtonRef.current.contains(t)
+      ) {
+        setIsUserMenuOpen(false);
+      }
     };
-    if (isUserMenuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (isUserMenuOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [isUserMenuOpen]);
 
   const smoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith("#")) {
       e.preventDefault();
-      const el = document.querySelector(href);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-        setIsMobileOpen(false);
-        setIsMegaMenuOpen(false);
-      }
+      document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+      setIsMobileOpen(false);
+      setIsMegaMenuOpen(false);
     }
   };
 
   const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (window.location.pathname === "/" || window.location.pathname === "") {
+    if (window.location.pathname === "/") {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -115,111 +235,6 @@ export default function Navbar() {
     setIsUserMenuOpen(false);
     setIsMobileOpen(false);
     await logout();
-  };
-
-  // ── Auth button — right side of desktop nav ──────────────────────────────
-  const AuthButton = () => {
-    // While checking token on mount, render nothing to avoid flicker
-    if (loading) return <div className="w-16 h-8" />;
-
-    // Logged in — show avatar + dropdown
-    if (user) {
-      return (
-        <div className="relative">
-          <button
-            ref={userButtonRef}
-            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-all"
-          >
-            <UserAvatar firstName={user.first_name} lastName={user.last_name} />
-            <span className="text-sm font-medium text-gray-700">{user.first_name}</span>
-            <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {isUserMenuOpen && (
-            <div
-              ref={userMenuRef}
-              className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200/60 overflow-hidden z-50 animate-in-fast"
-            >
-              {/* User info header */}
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                <p className="text-sm font-semibold text-gray-900">{user.first_name} {user.last_name}</p>
-                <p className="text-xs text-gray-500 truncate">{user.email}</p>
-              </div>
-
-              {/* Menu items */}
-              <div className="py-1">
-                <Link
-                  href="/dashboard"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
-                  </svg>
-                  My Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/payments"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                  Payments
-                </Link>
-                <Link
-                  href="/dashboard/invoices"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Invoices
-                </Link>
-                <Link
-                  href="/dashboard/profile"
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Profile
-                </Link>
-              </div>
-
-              {/* Logout */}
-              <div className="border-t border-gray-100 py-1">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Not logged in — show Login link
-    return (
-      <Link
-        href="/login"
-        className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
-      >
-        Login
-      </Link>
-    );
   };
 
   return (
@@ -243,17 +258,17 @@ export default function Navbar() {
               />
             </Link>
 
-            {/* Desktop Nav Links */}
+            {/* Desktop nav links */}
             <div className="hidden lg:flex items-center gap-1">
               <Link
                 href="/"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
                 onClick={handleHomeClick}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
               >
                 Home
               </Link>
 
-              {/* Services mega menu */}
+              {/* Services mega menu trigger */}
               <div className="relative">
                 <button
                   ref={servicesButtonRef}
@@ -261,7 +276,10 @@ export default function Navbar() {
                   className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-1"
                 >
                   Services
-                  <svg className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -273,7 +291,10 @@ export default function Navbar() {
                   >
                     <div className="grid grid-cols-3 gap-0 p-6">
                       {serviceCategories.map((category, idx) => (
-                        <div key={category.name} className={`${idx !== 0 ? "border-l border-gray-200/50 pl-6" : ""}`}>
+                        <div
+                          key={category.name}
+                          className={idx !== 0 ? "border-l border-gray-200/50 pl-6" : ""}
+                        >
                           <div className="flex items-center gap-2 mb-4">
                             <span className="text-xl">{category.icon}</span>
                             <h3 className="font-semibold text-gray-900 text-sm">{category.name}</h3>
@@ -283,8 +304,8 @@ export default function Navbar() {
                               <li key={service.href}>
                                 <a
                                   href={service.href}
-                                  className="group block p-3 rounded-lg hover:bg-red-50 transition-all"
                                   onClick={() => setIsMegaMenuOpen(false)}
+                                  className="group block p-3 rounded-lg hover:bg-red-50 transition-all"
                                 >
                                   <div className="font-medium text-gray-900 group-hover:text-red-600 transition-colors text-sm mb-1">
                                     {service.title}
@@ -319,9 +340,18 @@ export default function Navbar() {
               </a>
             </div>
 
-            {/* Right side — Login/Avatar + Get Started */}
+            {/* Right side: Login/Avatar + Get Started */}
             <div className="hidden lg:flex items-center gap-2">
-              <AuthButton />
+              <AuthButton
+                user={user}
+                loading={loading}
+                isUserMenuOpen={isUserMenuOpen}
+                userButtonRef={userButtonRef}
+                userMenuRef={userMenuRef}
+                onToggleUserMenu={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                onCloseUserMenu={() => setIsUserMenuOpen(false)}
+                onLogout={handleLogout}
+              />
               <a
                 href="#contact"
                 onClick={(e) => smoothScroll(e, "#contact")}
@@ -348,18 +378,20 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* ── Mobile menu ─────────────────────────────────────────────────── */}
         {isMobileOpen && (
           <div className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200/50">
             <div className="px-6 py-6 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
 
-              {/* Mobile: user greeting or login link */}
+              {/* Auth header */}
               {!loading && (
                 user ? (
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl mb-3">
                     <UserAvatar firstName={user.first_name} lastName={user.last_name} />
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{user.first_name} {user.last_name}</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user.first_name} {user.last_name}
+                      </p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
@@ -376,8 +408,8 @@ export default function Navbar() {
 
               <Link
                 href="/"
-                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all"
                 onClick={handleHomeClick}
+                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all"
               >
                 Home
               </Link>
@@ -393,8 +425,8 @@ export default function Navbar() {
                       <li key={service.href}>
                         <a
                           href={service.href}
-                          className="block px-4 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                           onClick={() => setIsMobileOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                         >
                           {service.title}
                         </a>
@@ -406,27 +438,38 @@ export default function Navbar() {
 
               <a
                 href="#why-us"
-                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all border-t border-gray-100 mt-3 pt-3"
                 onClick={(e) => { smoothScroll(e, "#why-us"); setIsMobileOpen(false); }}
+                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all border-t border-gray-100 mt-3 pt-3"
               >
                 Why Us
               </a>
               <a
                 href="#contact"
-                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all"
                 onClick={(e) => { smoothScroll(e, "#contact"); setIsMobileOpen(false); }}
+                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all"
               >
                 Contact
               </a>
 
-              {/* Mobile: dashboard links if logged in */}
+              {/* Dashboard links when logged in */}
               {user && (
                 <div className="border-t border-gray-100 pt-3 mt-3 space-y-1">
-                  <Link href="/dashboard" onClick={() => setIsMobileOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">My Dashboard</Link>
-                  <Link href="/dashboard/payments" onClick={() => setIsMobileOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">Payments</Link>
-                  <Link href="/dashboard/invoices" onClick={() => setIsMobileOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">Invoices</Link>
-                  <Link href="/dashboard/profile" onClick={() => setIsMobileOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">Profile</Link>
-                  <button onClick={handleLogout} className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-all">Sign Out</button>
+                  {dropdownLinks.map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setIsMobileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                  >
+                    Sign Out
+                  </button>
                 </div>
               )}
 
