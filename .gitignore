@@ -53,11 +53,13 @@ backend/**/__pycache__/
 backend/**/*.pyc
 
 # Misc
-uploads/
-*.jpeg
-*.jpg
-*.png
-Render DB Migration.txt
+# Ignore user-uploaded images only
+/public/uploads/*.jpeg
+/public/uploads/*.jpg
+/public/uploads/*.png
+
+# Keep logo and other static images
+!/public/images/**
 
 
 # dependencies
