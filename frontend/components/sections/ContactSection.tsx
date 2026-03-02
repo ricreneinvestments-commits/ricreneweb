@@ -29,7 +29,8 @@ export function ContactSection() {
     setSubmitStatus('idle');
 
     try {
-      const response = await fetch('/api/contact', {
+      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API}/api/contact/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
