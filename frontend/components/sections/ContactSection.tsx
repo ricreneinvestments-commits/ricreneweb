@@ -29,7 +29,7 @@ export function ContactSection() {
     setSubmitStatus('idle');
 
     try {
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
   const response = await fetch(`${backendUrl}/api/contact/`, {
     method: 'POST',
     headers: {
