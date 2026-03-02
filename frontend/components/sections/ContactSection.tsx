@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const navigationContent = {
   contact: {
-    email: "info@ricrene.co.tz",
+    email: "ricreneinvestments@gmail.com",
     phone: "+255 746 014 407",
     whatsapp: "+255 746 014 407",
     address: "Samora Tower, Dar es Salaam, Tanzania",
