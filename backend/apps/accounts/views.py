@@ -71,6 +71,8 @@ Phone:   {inquiry.phone or '—'}
 
 # ── Contact & Payment ─────────────────────────────────────────────────────────
 
+from .supabase_client import supabase, CONTACT_TABLE
+
 class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
 
@@ -78,13 +80,29 @@ class ContactInquiryView(APIView):
         serializer = ContactInquirySerializer(data=request.data)
         if serializer.is_valid():
             inquiry = serializer.save()
+
+            # 1️⃣ Send email notification
             try:
                 notify_contact(inquiry)
             except Exception as e:
-                print(f'Email notification failed: {e}')
-            return Response({"success": True}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                print(f"Email notification failed: {e}")
 
+            # 2️⃣ Save to Supabase
+            try:
+                supabase.table(CONTACT_TABLE).insert({
+                    "name": inquiry.name,
+                    "email": inquiry.email,
+                    "phone": inquiry.phone,
+                    "service": inquiry.service,
+                    "message": inquiry.message,
+                    "created_at": inquiry.created_at.isoformat()
+                }).execute()
+            except Exception as e:
+                print(f"Supabase save failed: {e}")
+
+            return Response({"success": True}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PaymentInquiryView(APIView):
     permission_classes = [AllowAny]
