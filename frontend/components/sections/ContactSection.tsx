@@ -29,14 +29,15 @@ export function ContactSection() {
     setSubmitStatus('idle');
 
     try {
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-  const response = await fetch(`${backendUrl}/api/contact/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(formData),
-    });
+      const response = await fetch('https://formspree.io/f/xnjbovwy', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  body: JSON.stringify(formData),
+  });
+  
 
       if (response.ok) {
         setSubmitStatus('success');
