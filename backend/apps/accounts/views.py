@@ -1,3 +1,4 @@
+# backend/apps/accounts/views.py — API views for contact/payment inquiries and auth
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -20,25 +21,30 @@ from .serializers import (
 
 # ── Email Helpers ─────────────────────────────────────────────────────────────
 
+import logging
+logger = logging.getLogger(__name__)
+
 def notify_contact(inquiry):
-    send_mail(
-        subject=f'📩 New Contact Inquiry — {inquiry.service}',
-        message=f"""
-New contact inquiry received on Ricrene.
+    try:
+        send_mail(
+            subject=f'📩 New Contact Inquiry — {inquiry.service}',
+            message=f"""
+New contact inquiry received.
 
-Name:     {inquiry.name}
-Email:    {inquiry.email}
-Phone:    {inquiry.phone}
-Service:  {inquiry.service}
-
-Message:
-{inquiry.message}
-        """.strip(),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[settings.NOTIFY_EMAIL],
-        fail_silently=False,
-    )
-
+Name: {inquiry.name}
+Email: {inquiry.email}
+Phone: {inquiry.phone}
+Service: {inquiry.service}
+Message: {inquiry.message}
+            """.strip(),
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[settings.NOTIFY_EMAIL],
+            fail_silently=False,
+        )
+        logger.info("Contact email sent successfully")
+    except Exception as e:
+        logger.error(f"Failed to send contact email: {e}")
+        raise e  # re-raise to see the error during testing
 
 def notify_payment(inquiry):
     period = {'monthly': '/ month', 'yearly': '/ year', 'once': 'one-time'}.get(
