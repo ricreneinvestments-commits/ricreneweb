@@ -76,32 +76,41 @@ class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = ContactInquirySerializer(data=request.data)
-        if serializer.is_valid():
-            inquiry = serializer.save()
+        try:
+            serializer = ContactInquirySerializer(data=request.data)
+            if serializer.is_valid():
+                inquiry = serializer.save()
 
-            # 1️⃣ Send email notification
-            try:
-                notify_contact(inquiry)
-            except Exception as e:
-                print(f"Email notification failed: {e}")
+                # Email notification
+                try:
+                    notify_contact(inquiry)
+                except Exception as e:
+                    print(f"Email failed: {e}")
 
-            # 2️⃣ Save to Supabase
-            try:
-                if supabase:
-                    supabase.table(CONTACT_TABLE).insert({
-                    "name": inquiry.name,
-                    "email": inquiry.email,
-                    "phone": inquiry.phone,
-                    "service": inquiry.service,
-                    "message": inquiry.message,
-                    "created_at": inquiry.created_at.isoformat()
-                }).execute()
-            except Exception as e:
-                print(f"Supabase save failed: {e}")
+                # Supabase save
+                try:
+                    if supabase:
+                        supabase.table(CONTACT_TABLE).insert({
+                            "name": inquiry.name,
+                            "email": inquiry.email,
+                            "phone": inquiry.phone,
+                            "service": inquiry.service,
+                            "message": inquiry.message,
+                        }).execute()
+                except Exception as e:
+                    print(f"Supabase failed: {e}")
 
-        return Response({"success": True}, status=status.HTTP_201_CREATED)
+                return Response({"success": True}, status=status.HTTP_201_CREATED)
 
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            # Return the actual error so we can see it
+            import traceback
+            return Response(
+                {"error": str(e), "trace": traceback.format_exc()},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class PaymentInquiryView(APIView):
