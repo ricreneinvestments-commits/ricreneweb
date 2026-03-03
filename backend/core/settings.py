@@ -108,11 +108,28 @@ SIMPLE_JWT = {
 }
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-
 CORS_ALLOWED_ORIGINS = [
     "https://ricrene-frontend.onrender.com",
+    "http://localhost:3000",
 ]
-CORS_ALLOW_CREDENTIALS = True   
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "origin",
+    "x-requested-with",
+]
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
 
 
 # ── Email ─────────────────────────────────────────────────────────────────────
