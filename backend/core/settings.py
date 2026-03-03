@@ -106,7 +106,9 @@ SIMPLE_JWT = {
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'https://ricrene-frontend.onrender.com').split(',')
+CORS_ALLOWED_ORIGINS = [
+    "https://ricrene-frontend.onrender.com",
+]
 CORS_ALLOW_CREDENTIALS = True   
 
 

@@ -5,8 +5,8 @@ import { useState } from "react";
 const navigationContent = {
   contact: {
     email: "ricreneinvestments@gmail.com",
-    phone: ["+255 746 014 407", "+255 784 075 702"],
-    whatsapp: ["+255 746 014 407", "+255 784 075 702"],
+    phone: ["+255 746 014 407"," | ", "+255 784 075 702"],
+    whatsapp: ["+255 746 014 407", " | ", "+255 784 075 702"],
     address: "Samora Tower, Dar es Salaam, Tanzania",
   },
 };
