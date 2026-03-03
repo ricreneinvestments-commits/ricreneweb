@@ -5,8 +5,8 @@ import { useState } from "react";
 const navigationContent = {
   contact: {
     email: "ricreneinvestments@gmail.com",
-    phone: "+255 746 014 407",
-    whatsapp: "+255 746 014 407",
+    phone: ["+255 746 014 407", "+255 784 075 702"],
+    whatsapp: ["+255 746 014 407", "+255 784 075 702"],
     address: "Samora Tower, Dar es Salaam, Tanzania",
   },
 };
@@ -29,7 +29,7 @@ export function ContactSection() {
     setSubmitStatus('idle');
 
     try {
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const response = await fetch(`${backendUrl}/api/contact/`, {
     method: 'POST',
     headers: {
@@ -121,8 +121,8 @@ export function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">WhatsApp</h4>
-                  <a href={`https://wa.me/${navigationContent.contact.whatsapp.replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-green-600 transition-colors">
-                    {navigationContent.contact.whatsapp}
+                  <a href={`https://wa.me/${navigationContent.contact.whatsapp[0].replace(/\s/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-green-600 transition-colors">
+                    {navigationContent.contact.whatsapp[0]}
                   </a>
                 </div>
               </div>
@@ -146,11 +146,11 @@ export function ContactSection() {
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Monday - Friday</span>
-                  <span className="font-medium text-gray-900">8:00 AM - 6:00 PM</span>
+                  <span className="font-medium text-gray-900">8:00 AM - 5:00 PM</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Saturday</span>
-                  <span className="font-medium text-gray-900">9:00 AM - 2:00 PM</span>
+                  <span className="font-medium text-gray-900">9:00 AM - 12:00 PM</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Sunday</span>
