@@ -88,7 +88,8 @@ class ContactInquiryView(APIView):
 
             # 2️⃣ Save to Supabase
             try:
-                supabase.table(CONTACT_TABLE).insert({
+                if supabase:
+                    supabase.table(CONTACT_TABLE).insert({
                     "name": inquiry.name,
                     "email": inquiry.email,
                     "phone": inquiry.phone,
@@ -99,9 +100,7 @@ class ContactInquiryView(APIView):
             except Exception as e:
                 print(f"Supabase save failed: {e}")
 
-            return Response({"success": True}, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
 
 
 
