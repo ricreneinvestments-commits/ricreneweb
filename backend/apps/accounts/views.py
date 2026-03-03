@@ -71,7 +71,7 @@ Phone:   {inquiry.phone or '—'}
 
 # ── Contact & Payment ─────────────────────────────────────────────────────────
 
-from .supabase_client import supabase, CONTACT_TABLE
+#from .supabase_client import supabase, CONTACT_TABLE
 class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
 
@@ -87,18 +87,6 @@ class ContactInquiryView(APIView):
                 except Exception as e:
                     print(f"Email failed: {e}")
 
-                # Supabase save
-                try:
-                    if supabase:
-                        supabase.table(CONTACT_TABLE).insert({
-                            "name": inquiry.name,
-                            "email": inquiry.email,
-                            "phone": inquiry.phone,
-                            "service": inquiry.service,
-                            "message": inquiry.message,
-                        }).execute()
-                except Exception as e:
-                    print(f"Supabase failed: {e}")
 
                 return Response({"success": True}, status=status.HTTP_201_CREATED)
 
