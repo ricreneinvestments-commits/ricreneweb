@@ -73,6 +73,7 @@ Phone:   {inquiry.phone or '—'}
 
 from .supabase_client import supabase, CONTACT_TABLE
 
+"""
 class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
 
@@ -103,6 +104,16 @@ class ContactInquiryView(APIView):
             return Response({"success": True}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+"""
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+
+@api_view(["POST"])
+def contact_view(request):
+    return Response({
+        "received": request.data
+    })
 
 class PaymentInquiryView(APIView):
     permission_classes = [AllowAny]
