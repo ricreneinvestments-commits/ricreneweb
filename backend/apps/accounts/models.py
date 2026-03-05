@@ -1,5 +1,32 @@
+# backend/apps/accounts/models.py
 from django.db import models
 from django.contrib.auth.models import User
+
+
+# ── Service ───────────────────────────────────────────────────────────────────
+
+class Service(models.Model):
+    CATEGORY_CHOICES = [
+        ('web',     'Web Solutions'),
+        ('systems', 'Business Systems'),
+        ('media',   'Digital & Media'),
+    ]
+
+    name        = models.CharField(max_length=200)
+    slug        = models.SlugField(unique=True)
+    category    = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    description = models.TextField()
+    short_desc  = models.CharField(max_length=300, blank=True)
+    price_range = models.CharField(max_length=100, blank=True)
+    is_active   = models.BooleanField(default=True)
+    order       = models.PositiveIntegerField(default=0)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
 
 
 # ── Contact Inquiry ───────────────────────────────────────────────────────────
@@ -53,17 +80,15 @@ class PaymentInquiry(models.Model):
         (STATUS_CANCELLED, 'Cancelled'),
     ]
 
-    plan_name    = models.CharField(max_length=255)
-    service_name = models.CharField(max_length=255, default='Ricrene Investment Ltd')
-    amount       = models.DecimalField(max_digits=12, decimal_places=2)
+    plan_name      = models.CharField(max_length=255)
+    service_name   = models.CharField(max_length=255, default='Ricrene Investment Ltd')
+    amount         = models.DecimalField(max_digits=12, decimal_places=2)
     billing_period = models.CharField(max_length=10, choices=BILLING_CHOICES, default=BILLING_MONTHLY)
-
     contact_method = models.CharField(max_length=10, choices=CONTACT_CHOICES)
-    name  = models.CharField(max_length=255, blank=True)
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=50, blank=True)
-
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    name           = models.CharField(max_length=255, blank=True)
+    email          = models.EmailField(blank=True)
+    phone          = models.CharField(max_length=50, blank=True)
+    status         = models.CharField(max_length=15, choices=STATUS_CHOICES, default=STATUS_PENDING)
 
     mpesa_transaction_id = models.CharField(max_length=255, blank=True, null=True)
     mpesa_phone          = models.CharField(max_length=20, blank=True, null=True)
@@ -81,7 +106,7 @@ class PaymentInquiry(models.Model):
         ordering = ['-created_at']
 
 
-# ── User Profile (role) ───────────────────────────────────────────────────────
+# ── User Profile ──────────────────────────────────────────────────────────────
 
 class UserProfile(models.Model):
     ROLE_ADMIN  = 'admin'
