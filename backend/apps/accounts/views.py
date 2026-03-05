@@ -23,8 +23,30 @@ logger = logging.getLogger(__name__)
 
 # ── Email Helpers ─────────────────────────────────────────────────────────────
 
+import threading
+
+def send_email_async(subject, message, from_email, recipient_list):
+    """Send email in background thread so it never blocks the request."""
+    def _send():
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=from_email,
+                recipient_list=recipient_list,
+                fail_silently=True,
+            )
+            logger.info("Email sent successfully")
+        except Exception as e:
+            logger.error(f"Email failed: {e}")
+    
+    thread = threading.Thread(target=_send)
+    thread.daemon = True
+    thread.start()
+
+
 def notify_contact(inquiry):
-    send_mail(
+    send_email_async(
         subject=f'📩 New Contact Inquiry — {inquiry.service}',
         message=f"""
 New contact inquiry received.
@@ -37,16 +59,14 @@ Message: {inquiry.message}
         """.strip(),
         from_email=settings.EMAIL_HOST_USER,
         recipient_list=[settings.NOTIFY_EMAIL],
-        fail_silently=True,
     )
-    logger.info("Contact email sent successfully")
 
 
 def notify_payment(inquiry):
     period = {'monthly': '/ month', 'yearly': '/ year', 'once': 'one-time'}.get(
         inquiry.billing_period, inquiry.billing_period
     )
-    send_mail(
+    send_email_async(
         subject=f'💰 New Payment Inquiry — {inquiry.plan_name}',
         message=f"""
 New payment inquiry received on Ricrene.
@@ -61,7 +81,6 @@ Phone:  {inquiry.phone or '—'}
         """.strip(),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[settings.NOTIFY_EMAIL],
-        fail_silently=False,
     )
 
 
