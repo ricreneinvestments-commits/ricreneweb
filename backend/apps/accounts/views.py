@@ -37,7 +37,7 @@ Message: {inquiry.message}
         """.strip(),
         from_email=settings.EMAIL_HOST_USER,
         recipient_list=[settings.NOTIFY_EMAIL],
-        fail_silently=False,
+        fail_silently=True,
     )
     logger.info("Contact email sent successfully")
 
