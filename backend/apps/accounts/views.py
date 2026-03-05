@@ -1,4 +1,4 @@
-# backend/apps/accounts/views.py — API views for contact/payment inquiries and auth
+# backend/apps/accounts/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,43 +8,39 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
+import logging
+import traceback
 
-from .models import (
-    ContactInquiry, PaymentInquiry,
-    UserProfile, Client
-)
+from .models import ContactInquiry, PaymentInquiry, UserProfile, Client
 from .serializers import (
     ContactInquirySerializer, PaymentInquirySerializer,
     RegisterSerializer, UserProfileSerializer
 )
+from .supabase_client import supabase, CONTACT_TABLE
+
+logger = logging.getLogger(__name__)
 
 
 # ── Email Helpers ─────────────────────────────────────────────────────────────
 
-import logging
-logger = logging.getLogger(__name__)
-
 def notify_contact(inquiry):
-    try:
-        send_mail(
-            subject=f'📩 New Contact Inquiry — {inquiry.service}',
-            message=f"""
+    send_mail(
+        subject=f'📩 New Contact Inquiry — {inquiry.service}',
+        message=f"""
 New contact inquiry received.
 
-Name: {inquiry.name}
-Email: {inquiry.email}
-Phone: {inquiry.phone}
+Name:    {inquiry.name}
+Email:   {inquiry.email}
+Phone:   {inquiry.phone}
 Service: {inquiry.service}
 Message: {inquiry.message}
-            """.strip(),
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[settings.NOTIFY_EMAIL],
-            fail_silently=False,
-        )
-        logger.info("Contact email sent successfully")
-    except Exception as e:
-        logger.error(f"Failed to send contact email: {e}")
-        raise e  # re-raise to see the error during testing
+        """.strip(),
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[settings.NOTIFY_EMAIL],
+        fail_silently=False,
+    )
+    logger.info("Contact email sent successfully")
+
 
 def notify_payment(inquiry):
     period = {'monthly': '/ month', 'yearly': '/ year', 'once': 'one-time'}.get(
@@ -55,13 +51,13 @@ def notify_payment(inquiry):
         message=f"""
 New payment inquiry received on Ricrene.
 
-Plan:    {inquiry.plan_name}
-Amount:  TZS {inquiry.amount:,.0f} {period}
-Via:     {inquiry.get_contact_method_display()}
+Plan:   {inquiry.plan_name}
+Amount: TZS {inquiry.amount:,.0f} {period}
+Via:    {inquiry.get_contact_method_display()}
 
-Name:    {inquiry.name or '—'}
-Email:   {inquiry.email or '—'}
-Phone:   {inquiry.phone or '—'}
+Name:   {inquiry.name or '—'}
+Email:  {inquiry.email or '—'}
+Phone:  {inquiry.phone or '—'}
         """.strip(),
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[settings.NOTIFY_EMAIL],
@@ -69,51 +65,80 @@ Phone:   {inquiry.phone or '—'}
     )
 
 
-# ── Contact & Payment ─────────────────────────────────────────────────────────
+# ── Contact ───────────────────────────────────────────────────────────────────
 
-#from .supabase_client import supabase, CONTACT_TABLE
+# NOTE: Contact form on the frontend currently uses Formspree (https://formspree.io/f/xnjbovwy)
+# To switch back to Django: update ContactSection.tsx fetch URL to:
+#   `${process.env.NEXT_PUBLIC_API_URL}/api/contact/`
+# and remove the Formspree Accept header.
+
 class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         try:
             serializer = ContactInquirySerializer(data=request.data)
-            if serializer.is_valid():
-                inquiry = serializer.save()
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-                # Email notification
-                try:
-                    notify_contact(inquiry)
-                except Exception as e:
-                    print(f"Email failed: {e}")
+            inquiry = serializer.save()
 
+            # 1. Send email notification
+            try:
+                notify_contact(inquiry)
+            except Exception as e:
+                logger.error(f"Contact email failed: {e}")
 
-                return Response({"success": True}, status=status.HTTP_201_CREATED)
+            # 2. Mirror to Supabase REST API (optional — falls back gracefully)
+            try:
+                if supabase:
+                    supabase.table(CONTACT_TABLE).insert({
+                        "name":       inquiry.name,
+                        "email":      inquiry.email,
+                        "phone":      inquiry.phone,
+                        "service":    inquiry.service,
+                        "message":    inquiry.message,
+                        "created_at": inquiry.created_at.isoformat(),
+                    }).execute()
+            except Exception as e:
+                logger.warning(f"Supabase mirror failed (non-fatal): {e}")
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"success": True}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            # Return the actual error so we can see it
-            import traceback
+            logger.error(f"ContactInquiryView error: {e}")
             return Response(
                 {"error": str(e), "trace": traceback.format_exc()},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
+# ── Payment ───────────────────────────────────────────────────────────────────
 
 class PaymentInquiryView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = PaymentInquirySerializer(data=request.data)
-        if serializer.is_valid():
+        try:
+            serializer = PaymentInquirySerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
             inquiry = serializer.save()
+
             try:
                 notify_payment(inquiry)
             except Exception as e:
-                print(f'Email notification failed: {e}')
+                logger.error(f"Payment email failed: {e}")
+
             return Response({"success": True, "id": serializer.data['id']}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"PaymentInquiryView error: {e}")
+            return Response(
+                {"error": str(e), "trace": traceback.format_exc()},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -128,14 +153,12 @@ class RegisterView(APIView):
 
         data = serializer.validated_data
 
-        # Check email not already taken
         if User.objects.filter(email=data['email']).exists():
             return Response(
                 {'email': 'An account with this email already exists.'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Create user — use email as username too
         user = User.objects.create_user(
             username=data['email'],
             email=data['email'],
@@ -143,17 +166,9 @@ class RegisterView(APIView):
             first_name=data['first_name'],
             last_name=data.get('last_name', ''),
         )
-
-        # Create profile (role=client by default)
         UserProfile.objects.create(user=user, role=UserProfile.ROLE_CLIENT)
+        Client.objects.create(user=user, phone=data.get('phone', ''))
 
-        # Create client profile
-        Client.objects.create(
-            user=user,
-            phone=data.get('phone', ''),
-        )
-
-        # Issue tokens immediately — user is logged in after signup
         refresh = RefreshToken.for_user(user)
         return Response({
             'access':     str(refresh.access_token),
@@ -171,14 +186,12 @@ class LoginView(APIView):
     def post(self, request):
         email    = request.data.get('email', '').lower().strip()
         password = request.data.get('password', '')
-
-        # Django auth uses username — we store email as username
-        user = authenticate(request, username=email, password=password)
+        user     = authenticate(request, username=email, password=password)
 
         if not user:
             return Response(
                 {'error': 'Invalid email or password.'},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         refresh = RefreshToken.for_user(user)
@@ -224,16 +237,13 @@ class MeView(APIView):
         })
 
     def patch(self, request):
-        # Update profile info
         user   = request.user
         client = getattr(user, 'client_profile', None)
 
-        # Update name fields on user
         user.first_name = request.data.get('first_name', user.first_name)
         user.last_name  = request.data.get('last_name',  user.last_name)
         user.save()
 
-        # Update client profile fields
         if client:
             client.phone        = request.data.get('phone',        client.phone)
             client.company_name = request.data.get('company_name', client.company_name)

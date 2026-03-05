@@ -28,16 +28,13 @@ export function ContactSection() {
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-    try {
-      const response = await fetch('https://formspree.io/f/xnjbovwy', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  body: JSON.stringify(formData),
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contact/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData),
   });
-  
+
 
       if (response.ok) {
         setSubmitStatus('success');
