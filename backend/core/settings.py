@@ -14,6 +14,8 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     "ricrene-backend.onrender.com",
+    "localhost",
+    "127.0.0.1",
 ]
 
 # ── Apps ──────────────────────────────────────────────────────────────────────

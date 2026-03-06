@@ -10,11 +10,14 @@ from django.core.mail import send_mail
 from django.conf import settings
 import logging
 import traceback
+import threading
+import os
 
-from .models import ContactInquiry, PaymentInquiry, UserProfile, Client
+from .models import ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice
 from .serializers import (
     ContactInquirySerializer, PaymentInquirySerializer,
-    RegisterSerializer, UserProfileSerializer
+    RegisterSerializer, UserProfileSerializer,
+    ProjectSerializer, InvoiceSerializer,
 )
 from .supabase_client import supabase, CONTACT_TABLE
 
@@ -23,10 +26,8 @@ logger = logging.getLogger(__name__)
 
 # ── Email Helpers ─────────────────────────────────────────────────────────────
 
-import threading
-
 def send_email_async(subject, message, from_email, recipient_list):
-    """Send email in background thread so it never blocks the request."""
+    """Send email in background thread — never blocks the request."""
     def _send():
         try:
             send_mail(
@@ -39,7 +40,7 @@ def send_email_async(subject, message, from_email, recipient_list):
             logger.info("Email sent successfully")
         except Exception as e:
             logger.error(f"Email failed: {e}")
-    
+
     thread = threading.Thread(target=_send)
     thread.daemon = True
     thread.start()
@@ -84,12 +85,42 @@ Phone:  {inquiry.phone or '—'}
     )
 
 
-# ── Contact ───────────────────────────────────────────────────────────────────
+def notify_project_request(user, data):
+    send_email_async(
+        subject=f'🚀 New Project Request — {data.get("service", "General")}',
+        message=f"""
+New project request from client portal.
+
+Client:      {user.get_full_name()} ({user.email})
+Project:     {data.get("name", "—")}
+Service:     {data.get("service", "—")}
+Description: {data.get("description", "—")}
+Budget:      {data.get("budget", "Not specified")}
+        """.strip(),
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[settings.NOTIFY_EMAIL],
+    )
+
+
+def notify_client_message(user, message):
+    send_email_async(
+        subject=f'💬 New Message from {user.get_full_name()}',
+        message=f"""
+New message from client portal.
+
+From:    {user.get_full_name()} ({user.email})
+Message: {message}
+        """.strip(),
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[settings.NOTIFY_EMAIL],
+    )
+
+
+# ── Contact (public) ──────────────────────────────────────────────────────────
 
 # NOTE: Contact form on the frontend currently uses Formspree (https://formspree.io/f/xnjbovwy)
 # To switch back to Django: update ContactSection.tsx fetch URL to:
 #   `${process.env.NEXT_PUBLIC_API_URL}/api/contact/`
-# and remove the Formspree Accept header.
 
 class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
@@ -102,13 +133,11 @@ class ContactInquiryView(APIView):
 
             inquiry = serializer.save()
 
-            # 1. Send email notification
             try:
                 notify_contact(inquiry)
             except Exception as e:
                 logger.error(f"Contact email failed: {e}")
 
-            # 2. Mirror to Supabase REST API (optional — falls back gracefully)
             try:
                 if supabase:
                     supabase.table(CONTACT_TABLE).insert({
@@ -132,7 +161,7 @@ class ContactInquiryView(APIView):
             )
 
 
-# ── Payment ───────────────────────────────────────────────────────────────────
+# ── Payment Inquiry (public) ──────────────────────────────────────────────────
 
 class PaymentInquiryView(APIView):
     permission_classes = [AllowAny]
@@ -158,6 +187,98 @@ class PaymentInquiryView(APIView):
                 {"error": str(e), "trace": traceback.format_exc()},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+# ── Client Portal — Projects ──────────────────────────────────────────────────
+
+class ProjectListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        projects = Project.objects.filter(client__user=request.user)
+        return Response(ProjectSerializer(projects, many=True).data)
+
+
+class ProjectRequestView(APIView):
+    """Client submits a new project request from the portal."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = request.data
+        required = ['name', 'service', 'description']
+        for field in required:
+            if not data.get(field):
+                return Response({field: 'This field is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get or create client profile
+        client, _ = Client.objects.get_or_create(user=request.user)
+
+        # Create project with inquiry status
+        project = Project.objects.create(
+            client=client,
+            name=data['name'],
+            service=data['service'],
+            description=data['description'],
+            status='inquiry',
+            amount=0,
+            notes=f"Budget: {data.get('budget', 'Not specified')}",
+        )
+
+        try:
+            notify_project_request(request.user, data)
+        except Exception as e:
+            logger.error(f"Project request email failed: {e}")
+
+        return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
+
+
+# ── Client Portal — Invoices ──────────────────────────────────────────────────
+
+class InvoiceListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        invoices = Invoice.objects.filter(project__client__user=request.user)
+        return Response(InvoiceSerializer(invoices, many=True).data)
+
+
+# ── Client Portal — Payments ──────────────────────────────────────────────────
+
+class PaymentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        payments = PaymentInquiry.objects.filter(email=request.user.email)
+        return Response(PaymentInquirySerializer(payments, many=True).data)
+
+
+from .models import Service
+from .serializers import ServiceSerializer
+
+class ServiceListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        services = Service.objects.filter(is_active=True)
+        return Response(ServiceSerializer(services, many=True).data)
+
+# ── Client Portal — Messages ──────────────────────────────────────────────────
+
+class ClientMessageView(APIView):
+    """Client sends a direct message to admin from the portal."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        message = request.data.get('message', '').strip()
+        if not message:
+            return Response({'message': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            notify_client_message(request.user, message)
+        except Exception as e:
+            logger.error(f"Client message email failed: {e}")
+
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────

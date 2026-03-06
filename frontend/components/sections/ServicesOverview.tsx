@@ -1,4 +1,7 @@
+//frontend/components/sections/ServicesOverview.tsx
 "use client";
+
+import { useEffect, useState } from "react";
 
 const ServiceIcons = {
   browser: () => (
@@ -173,6 +176,19 @@ const servicesContent = {
 export function ServicesOverview() {
   const { headline, subheadline, services, cta } = servicesContent;
 
+  const [prices, setPrices] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/services/`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: { slug: string; price_range: string }[]) => {
+        const map: Record<string, string> = {};
+        data.forEach(s => { map[s.slug] = s.price_range; });
+        setPrices(map);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section id="services" className="py-20 md:py-32 bg-gradient-to-b from-white via-gray-50 to-white relative overflow-hidden">
       <div className="absolute top-0 left-0 w-96 h-96 bg-red-50 rounded-full blur-3xl opacity-50 -translate-x-1/2 -translate-y-1/2"></div>
@@ -225,6 +241,12 @@ export function ServicesOverview() {
                       </li>
                     ))}
                   </ul>
+
+                  {prices[service.slug] && (
+                    <p className="text-sm font-semibold text-red-600 mb-4">
+                      {prices[service.slug]}
+                    </p>
+                  )}
                   
                   <a href={service.detailPageUrl} className="inline-flex items-center text-red-600 font-semibold text-sm group-hover:gap-2 transition-all">
                     Learn more

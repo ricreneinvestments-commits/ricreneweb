@@ -138,7 +138,7 @@ export function MobilePaymentModal({
                 <div>
                   <p className="font-bold text-amber-900 text-sm mb-0.5">Online payments coming soon</p>
                   <p className="text-amber-700 text-xs leading-relaxed">
-                    We&apos;re setting up M-Pesa and card payments. For now, reach out directly — we&apos;ll confirm your plan and send payment instructions within a few hours.
+                    We&apos;re setting up local and card payment systems. For now, reach out directly — we&apos;ll confirm your plan and send payment instructions within a few hours.
                   </p>
                 </div>
               </div>
@@ -194,7 +194,7 @@ export function MobilePaymentModal({
                   </div>
                   <div className="text-left flex-1">
                     <p className="font-bold text-gray-800">Send us an email</p>
-                    <p className="text-xs text-gray-500">info@ricrene.co.tz</p>
+                    <p className="text-xs text-gray-500">ricreneinvestments@gmail.com</p>
                   </div>
                   <svg className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />

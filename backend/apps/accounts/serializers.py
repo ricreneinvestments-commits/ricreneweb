@@ -1,6 +1,8 @@
+# backend/apps/accounts/serializers.py
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import ContactInquiry, PaymentInquiry, UserProfile, Client
+from .models import ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice
+from .models import Service, ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice
 
 
 class ContactInquirySerializer(serializers.ModelSerializer):
@@ -39,3 +41,38 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model  = UserProfile
         fields = ['first_name', 'last_name', 'email', 'role']
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Project
+        fields = [
+            'id', 'name', 'description', 'service', 'status',
+            'start_date', 'end_date', 'amount', 'notes',
+            'created_at', 'updated_at', 'client_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_client_name(self, obj):
+        return obj.client.user.get_full_name()
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    project_name = serializers.CharField(source='project.name', read_only=True)
+
+    class Meta:
+        model  = Invoice
+        fields = [
+            'id', 'invoice_number', 'project', 'project_name',
+            'amount', 'status', 'issued_date', 'due_date',
+            'paid_date', 'notes', 'created_at'
+        ]
+        read_only_fields = ['id', 'issued_date', 'created_at']
+
+
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Service
+        fields = ['id', 'name', 'slug', 'category', 'short_desc', 'description', 'price_range', 'order']
