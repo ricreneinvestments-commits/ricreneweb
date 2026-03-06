@@ -1,8 +1,6 @@
 //frontend/components/sections/ServicesOverview.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-
 const ServiceIcons = {
   browser: () => (
     <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,11 +57,7 @@ const servicesContent = {
     {
       title: "Website Design & Development",
       shortDescription: "Create stunning, high-performance websites that convert visitors into customers. Modern designs optimized for all devices.",
-      features: [
-        "Responsive mobile-first design",
-        "SEO-optimized architecture",
-        "E-commerce integration",
-      ],
+      features: ["Responsive mobile-first design", "SEO-optimized architecture", "E-commerce integration"],
       icon: "browser",
       slug: "web-development",
       detailPageUrl: "/services/web-development",
@@ -71,11 +65,7 @@ const servicesContent = {
     {
       title: "Domain & Hosting Subscriptions",
       shortDescription: "Secure your online presence with professional domain registration and reliable hosting solutions.",
-      features: [
-        "Domain name registration",
-        "Fast & reliable hosting",
-        "SSL certificates included",
-      ],
+      features: ["Domain name registration", "Fast & reliable hosting", "SSL certificates included"],
       icon: "server",
       slug: "domain-hosting",
       detailPageUrl: "/services/domain-hosting",
@@ -83,23 +73,15 @@ const servicesContent = {
     {
       title: "Website Maintenance & Support",
       shortDescription: "Keep your website running smoothly with regular updates, security patches, and technical support.",
-      features: [
-        "Regular updates & backups",
-        "Security monitoring",
-        "Technical support 24/7",
-      ],
+      features: ["Regular updates & backups", "Security monitoring", "Technical support 24/7"],
       icon: "wrench",
-      slug: "website-maintainance",
-      detailPageUrl: "/services/website-maintainance",
+      slug: "website-maintenance",
+      detailPageUrl: "/services/website-maintenance",
     },
     {
       title: "Business Automation & Systems",
       shortDescription: "Streamline your operations with custom business systems designed for your unique workflow.",
-      features: [
-        "Custom CRM & ERP systems",
-        "Workflow automation",
-        "API integrations",
-      ],
+      features: ["Custom CRM & ERP systems", "Workflow automation", "API integrations"],
       icon: "dashboard",
       slug: "custom-systems",
       detailPageUrl: "/services/custom-systems",
@@ -107,11 +89,7 @@ const servicesContent = {
     {
       title: "Data Analytics & Insights",
       shortDescription: "Transform raw data into actionable insights that drive smarter business decisions.",
-      features: [
-        "Interactive dashboards",
-        "Predictive analytics",
-        "Custom reporting",
-      ],
+      features: ["Interactive dashboards", "Predictive analytics", "Custom reporting"],
       icon: "chart",
       slug: "data-analysis",
       detailPageUrl: "/services/data-analysis",
@@ -119,11 +97,7 @@ const servicesContent = {
     {
       title: "Custom Business Email Solutions",
       shortDescription: "Professional email infrastructure with enterprise-grade security and reliability.",
-      features: [
-        "Custom domain emails",
-        "Cloud-based solutions",
-        "Advanced security features",
-      ],
+      features: ["Custom domain emails", "Cloud-based solutions", "Advanced security features"],
       icon: "email",
       slug: "corporate-email",
       detailPageUrl: "/services/corporate-email",
@@ -131,23 +105,15 @@ const servicesContent = {
     {
       title: "SEO & Digital Marketing",
       shortDescription: "Boost your online visibility and attract more customers with data-driven marketing strategies.",
-      features: [
-        "Search engine optimization",
-        "Social media marketing",
-        "Content strategy & ads",
-      ],
+      features: ["Search engine optimization", "Social media marketing", "Content strategy & ads"],
       icon: "megaphone",
-      slug: "seo-marketing",
+      slug: "seo-digital-marketing",
       detailPageUrl: "/services/seo-digital-marketing",
     },
     {
       title: "Digital Invitations & Cards",
       shortDescription: "Modern digital solutions for events, networking, and professional communications.",
-      features: [
-        "Custom digital invitations",
-        "Smart business cards",
-        "QR code integration",
-      ],
+      features: ["Custom digital invitations", "Smart business cards", "QR code integration"],
       icon: "card",
       slug: "digital-solutions",
       detailPageUrl: "/services/digital-solutions",
@@ -155,11 +121,7 @@ const servicesContent = {
     {
       title: "Video Production & Streaming",
       shortDescription: "Professional video content creation and live streaming services for events and marketing.",
-      features: [
-        "Event live streaming",
-        "Corporate video production",
-        "Multi-platform distribution",
-      ],
+      features: ["Event live streaming", "Corporate video production", "Multi-platform distribution"],
       icon: "video",
       slug: "video-production",
       detailPageUrl: "/services/video-production",
@@ -175,19 +137,6 @@ const servicesContent = {
 
 export function ServicesOverview() {
   const { headline, subheadline, services, cta } = servicesContent;
-
-  const [prices, setPrices] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/services/`)
-      .then(r => r.ok ? r.json() : [])
-      .then((data: { slug: string; price_range: string }[]) => {
-        const map: Record<string, string> = {};
-        data.forEach(s => { map[s.slug] = s.price_range; });
-        setPrices(map);
-      })
-      .catch(() => {});
-  }, []);
 
   return (
     <section id="services" className="py-20 md:py-32 bg-gradient-to-b from-white via-gray-50 to-white relative overflow-hidden">
@@ -207,14 +156,12 @@ export function ServicesOverview() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {services.map((service) => {
             const Icon = ServiceIcons[service.icon as keyof typeof ServiceIcons] || ServiceIcons.dashboard;
-            
             return (
               <div
                 key={service.slug}
                 className="group relative bg-white rounded-2xl p-8 border border-gray-200 hover:border-red-300 hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:-translate-y-2"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-red-700/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
                 <div className="relative z-10">
                   <div className="relative mb-6">
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-300 shadow-lg">
@@ -222,15 +169,12 @@ export function ServicesOverview() {
                     </div>
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-red-600 to-red-700 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300"></div>
                   </div>
-                  
                   <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
                     {service.title}
                   </h3>
-                  
                   <p className="text-gray-600 mb-6 leading-relaxed line-clamp-3">
                     {service.shortDescription}
                   </p>
-                  
                   <ul className="space-y-2 mb-6">
                     {service.features.slice(0, 3).map((feature, idx) => (
                       <li key={idx} className="flex items-start text-sm text-gray-600">
@@ -241,13 +185,6 @@ export function ServicesOverview() {
                       </li>
                     ))}
                   </ul>
-
-                  {prices[service.slug] && (
-                    <p className="text-sm font-semibold text-red-600 mb-4">
-                      {prices[service.slug]}
-                    </p>
-                  )}
-                  
                   <a href={service.detailPageUrl} className="inline-flex items-center text-red-600 font-semibold text-sm group-hover:gap-2 transition-all">
                     Learn more
                     <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,7 +192,6 @@ export function ServicesOverview() {
                     </svg>
                   </a>
                 </div>
-
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/10 to-red-700/10 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </div>
             );
@@ -266,8 +202,8 @@ export function ServicesOverview() {
           <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-3xl p-8 md:p-12 border border-red-200 text-center">
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{cta.headline}</h3>
             <p className="text-lg text-gray-600 mb-8">{cta.description}</p>
-            <a 
-              href={cta.buttonUrl} 
+            <a
+              href={cta.buttonUrl}
               onClick={(e) => {
                 e.preventDefault();
                 document.querySelector(cta.buttonUrl)?.scrollIntoView({ behavior: 'smooth' });
