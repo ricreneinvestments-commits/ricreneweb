@@ -1,3 +1,4 @@
+// frontend/app/robots.ts
 import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
@@ -6,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/admin/"],
+        disallow: ["/dashboard", "/api/"],
       },
     ],
     sitemap: "https://ricrene.co.tz/sitemap.xml",
