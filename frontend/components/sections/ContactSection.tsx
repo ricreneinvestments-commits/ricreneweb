@@ -22,26 +22,19 @@ export function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  // FIX 1: handleSubmit now uses React.FormEvent<HTMLFormElement> — the correct type
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
-  try {
-    /*const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contact/`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(formData),
-});*/
-      const response = await fetch('https://formspree.io/f/xnjbovwy', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  body: JSON.stringify(formData),
-});
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contact/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
 
       if (response.ok) {
         setSubmitStatus('success');
@@ -194,7 +187,6 @@ export function ContactSection() {
                 </div>
               )}
 
-              {/* FIX 3: Wrap inputs in a real <form> with onSubmit — button is now type="submit" */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
@@ -258,7 +250,7 @@ export function ContactSection() {
                   >
                     <option value="">Select a service...</option>
                     <option value="web-development">Website Design & Development</option>
-                    <option value="website-maintainance">Website Maintenance & Support</option>
+                    <option value="website-maintenance">Website Maintenance & Support</option>
                     <option value="domain-hosting">Domain & Hosting Subscriptions</option>
                     <option value="custom-systems">Business Automation & Systems</option>
                     <option value="data-analysis">Data Analytics & Insights</option>
@@ -286,7 +278,6 @@ export function ContactSection() {
                   />
                 </div>
 
-                {/* FIX 4: type="submit" — no more onClick hacks */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
