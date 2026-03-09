@@ -3,25 +3,35 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
 import logging
-import traceback
 import threading
-import os
 
-from .models import ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice
+from .models import ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice, Service
 from .serializers import (
     ContactInquirySerializer, PaymentInquirySerializer,
     RegisterSerializer, UserProfileSerializer,
-    ProjectSerializer, InvoiceSerializer,
+    ProjectSerializer, InvoiceSerializer, ServiceSerializer,
 )
 from .supabase_client import supabase, CONTACT_TABLE
 
 logger = logging.getLogger(__name__)
+
+
+# ── Custom Throttles ──────────────────────────────────────────────────────────
+
+class AuthThrottle(AnonRateThrottle):
+    rate = '10/minute'
+    scope = 'auth'
+
+class ContactThrottle(AnonRateThrottle):
+    rate = '5/minute'
+    scope = 'contact'
 
 
 # ── Email Helpers ─────────────────────────────────────────────────────────────
@@ -37,9 +47,9 @@ def send_email_async(subject, message, from_email, recipient_list):
                 recipient_list=recipient_list,
                 fail_silently=True,
             )
-            logger.info("Email sent successfully")
+            logger.info("Email sent successfully to %s", recipient_list)
         except Exception as e:
-            logger.error(f"Email failed: {e}")
+            logger.error("Email failed: %s", e)
 
     thread = threading.Thread(target=_send)
     thread.daemon = True
@@ -116,6 +126,16 @@ Message: {message}
     )
 
 
+# ── Services (public) ─────────────────────────────────────────────────────────
+
+class ServiceListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        services = Service.objects.filter(is_active=True)
+        return Response(ServiceSerializer(services, many=True).data)
+
+
 # ── Contact (public) ──────────────────────────────────────────────────────────
 
 # NOTE: Contact form on the frontend currently uses Formspree (https://formspree.io/f/xnjbovwy)
@@ -124,69 +144,55 @@ Message: {message}
 
 class ContactInquiryView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ContactThrottle]
 
     def post(self, request):
+        serializer = ContactInquirySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        inquiry = serializer.save()
+
         try:
-            serializer = ContactInquirySerializer(data=request.data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            inquiry = serializer.save()
-
-            try:
-                notify_contact(inquiry)
-            except Exception as e:
-                logger.error(f"Contact email failed: {e}")
-
-            try:
-                if supabase:
-                    supabase.table(CONTACT_TABLE).insert({
-                        "name":       inquiry.name,
-                        "email":      inquiry.email,
-                        "phone":      inquiry.phone,
-                        "service":    inquiry.service,
-                        "message":    inquiry.message,
-                        "created_at": inquiry.created_at.isoformat(),
-                    }).execute()
-            except Exception as e:
-                logger.warning(f"Supabase mirror failed (non-fatal): {e}")
-
-            return Response({"success": True}, status=status.HTTP_201_CREATED)
-
+            notify_contact(inquiry)
         except Exception as e:
-            logger.error(f"ContactInquiryView error: {e}")
-            return Response(
-                {"error": str(e), "trace": traceback.format_exc()},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            logger.error("Contact email failed: %s", e)
+
+        try:
+            if supabase:
+                supabase.table(CONTACT_TABLE).insert({
+                    "name":       inquiry.name,
+                    "email":      inquiry.email,
+                    "phone":      inquiry.phone,
+                    "service":    inquiry.service,
+                    "message":    inquiry.message,
+                    "created_at": inquiry.created_at.isoformat(),
+                }).execute()
+        except Exception as e:
+            logger.warning("Supabase mirror failed (non-fatal): %s", e)
+
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
 
 
 # ── Payment Inquiry (public) ──────────────────────────────────────────────────
 
 class PaymentInquiryView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ContactThrottle]
 
     def post(self, request):
+        serializer = PaymentInquirySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        inquiry = serializer.save()
+
         try:
-            serializer = PaymentInquirySerializer(data=request.data)
-            if not serializer.is_valid():
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            inquiry = serializer.save()
-
-            try:
-                notify_payment(inquiry)
-            except Exception as e:
-                logger.error(f"Payment email failed: {e}")
-
-            return Response({"success": True, "id": serializer.data['id']}, status=status.HTTP_201_CREATED)
-
+            notify_payment(inquiry)
         except Exception as e:
-            logger.error(f"PaymentInquiryView error: {e}")
-            return Response(
-                {"error": str(e), "trace": traceback.format_exc()},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            logger.error("Payment email failed: %s", e)
+
+        return Response({"success": True, "id": serializer.data['id']}, status=status.HTTP_201_CREATED)
 
 
 # ── Client Portal — Projects ──────────────────────────────────────────────────
@@ -200,34 +206,40 @@ class ProjectListView(APIView):
 
 
 class ProjectRequestView(APIView):
-    """Client submits a new project request from the portal."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         data = request.data
         required = ['name', 'service', 'description']
         for field in required:
-            if not data.get(field):
+            if not str(data.get(field, '')).strip():
                 return Response({field: 'This field is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get or create client profile
+        # Sanitise lengths
+        name        = str(data['name'])[:255]
+        service     = str(data['service'])[:255]
+        description = str(data['description'])[:2000]
+        budget      = str(data.get('budget', 'Not specified'))[:255]
+
         client, _ = Client.objects.get_or_create(user=request.user)
 
-        # Create project with inquiry status
         project = Project.objects.create(
             client=client,
-            name=data['name'],
-            service=data['service'],
-            description=data['description'],
+            name=name,
+            service=service,
+            description=description,
             status='inquiry',
             amount=0,
-            notes=f"Budget: {data.get('budget', 'Not specified')}",
+            notes=f"Budget: {budget}",
         )
 
         try:
-            notify_project_request(request.user, data)
+            notify_project_request(request.user, {
+                'name': name, 'service': service,
+                'description': description, 'budget': budget,
+            })
         except Exception as e:
-            logger.error(f"Project request email failed: {e}")
+            logger.error("Project request email failed: %s", e)
 
         return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
 
@@ -252,31 +264,20 @@ class PaymentListView(APIView):
         return Response(PaymentInquirySerializer(payments, many=True).data)
 
 
-from .models import Service
-from .serializers import ServiceSerializer
-
-class ServiceListView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        services = Service.objects.filter(is_active=True)
-        return Response(ServiceSerializer(services, many=True).data)
-
 # ── Client Portal — Messages ──────────────────────────────────────────────────
 
 class ClientMessageView(APIView):
-    """Client sends a direct message to admin from the portal."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        message = request.data.get('message', '').strip()
+        message = str(request.data.get('message', '')).strip()[:2000]
         if not message:
             return Response({'message': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             notify_client_message(request.user, message)
         except Exception as e:
-            logger.error(f"Client message email failed: {e}")
+            logger.error("Client message email failed: %s", e)
 
         return Response({"success": True}, status=status.HTTP_201_CREATED)
 
@@ -285,6 +286,7 @@ class ClientMessageView(APIView):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthThrottle]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -310,6 +312,8 @@ class RegisterView(APIView):
         Client.objects.create(user=user, phone=data.get('phone', ''))
 
         refresh = RefreshToken.for_user(user)
+        logger.info("New user registered: %s", user.email)
+
         return Response({
             'access':     str(refresh.access_token),
             'refresh':    str(refresh),
@@ -322,13 +326,15 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthThrottle]
 
     def post(self, request):
-        email    = request.data.get('email', '').lower().strip()
-        password = request.data.get('password', '')
+        email    = str(request.data.get('email', '')).lower().strip()[:254]
+        password = str(request.data.get('password', ''))
         user     = authenticate(request, username=email, password=password)
 
         if not user:
+            logger.warning("Failed login attempt for email: %s", email)
             return Response(
                 {'error': 'Invalid email or password.'},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -336,6 +342,7 @@ class LoginView(APIView):
 
         refresh = RefreshToken.for_user(user)
         profile = getattr(user, 'profile', None)
+        logger.info("User logged in: %s", user.email)
 
         return Response({
             'access':     str(refresh.access_token),
@@ -354,6 +361,7 @@ class LogoutView(APIView):
         try:
             token = RefreshToken(request.data.get('refresh'))
             token.blacklist()
+            logger.info("User logged out: %s", request.user.email)
         except Exception:
             pass
         return Response({'success': True})
@@ -380,14 +388,14 @@ class MeView(APIView):
         user   = request.user
         client = getattr(user, 'client_profile', None)
 
-        user.first_name = request.data.get('first_name', user.first_name)
-        user.last_name  = request.data.get('last_name',  user.last_name)
+        user.first_name = str(request.data.get('first_name', user.first_name))[:150]
+        user.last_name  = str(request.data.get('last_name',  user.last_name))[:150]
         user.save()
 
         if client:
-            client.phone        = request.data.get('phone',        client.phone)
-            client.company_name = request.data.get('company_name', client.company_name)
-            client.address      = request.data.get('address',      client.address)
+            client.phone        = str(request.data.get('phone',        client.phone))[:50]
+            client.company_name = str(request.data.get('company_name', client.company_name))[:255]
+            client.address      = str(request.data.get('address',      client.address))[:500]
             client.save()
 
         return Response({'success': True})

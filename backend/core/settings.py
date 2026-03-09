@@ -1,8 +1,8 @@
+# backend/core/settings.py
 from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -12,11 +12,18 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-dev-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = [
-    "ricrene-backend.onrender.com",
-    "localhost",
-    "127.0.0.1",
-]
+ALLOWED_HOSTS = os.getenv(
+    'ALLOWED_HOSTS',
+    'ricrene-backend.onrender.com,localhost,127.0.0.1'
+).split(',')
+
+# ── Security Headers (production) ─────────────────────────────────────────────
+
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER       = True
+    SECURE_CONTENT_TYPE_NOSNIFF     = True
+    X_FRAME_OPTIONS                 = 'DENY'
+    SECURE_REFERRER_POLICY          = 'strict-origin-when-cross-origin'
 
 # ── Apps ──────────────────────────────────────────────────────────────────────
 
@@ -44,7 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -81,6 +88,7 @@ DATABASES = {
         'OPTIONS': {
             'sslmode': 'require',
         },
+        'CONN_MAX_AGE': 60,
     }
 }
 
@@ -100,6 +108,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/hour',
+        'user': '300/hour',
+        'auth': '10/minute',      # used by login/register
+        'contact': '5/minute',    # used by contact form
+    },
 }
 
 SIMPLE_JWT = {
@@ -110,6 +128,7 @@ SIMPLE_JWT = {
 }
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
+
 CORS_ALLOWED_ORIGINS = [
     "https://ricrene-frontend.onrender.com",
     "http://localhost:3000",
@@ -133,17 +152,51 @@ CORS_ALLOW_METHODS = [
     "PUT",
 ]
 
-
 # ── Email ─────────────────────────────────────────────────────────────────────
 
-EMAIL_BACKEND      = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST         = 'smtp.gmail.com'
-EMAIL_PORT         = 587
-EMAIL_USE_TLS      = True
-EMAIL_HOST_USER    = os.getenv('EMAIL_HOST_USER')
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = f'Ricrene <{os.getenv("EMAIL_HOST_USER")}>'
-NOTIFY_EMAIL       = os.getenv('NOTIFY_EMAIL')
+DEFAULT_FROM_EMAIL  = f'Ricrene <{os.getenv("EMAIL_HOST_USER")}>'
+NOTIFY_EMAIL        = os.getenv('NOTIFY_EMAIL')
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {module} — {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'apps': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 # ── Internationalisation ──────────────────────────────────────────────────────
 
