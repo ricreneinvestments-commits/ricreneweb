@@ -39,33 +39,34 @@ class ContactThrottle(AnonRateThrottle):
 # ── Email Helpers ─────────────────────────────────────────────────────────────
 
 def send_email_async(subject, message, from_email, recipient_list):
-    """Send email via Brevo API — works on Render free tier."""
+    """Send email via Brevo HTTP API — no external library needed."""
     def _send():
         try:
-            import sib_api_v3_sdk
-            from sib_api_v3_sdk.rest import ApiException
-
+            import requests as req
             api_key = os.getenv('BREVO_API_KEY')
             if not api_key:
                 logger.warning("BREVO_API_KEY not set — email skipped")
                 return
 
-            configuration = sib_api_v3_sdk.Configuration()
-            configuration.api_key['api-key'] = api_key
-
-            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
-                sib_api_v3_sdk.ApiClient(configuration)
+            response = req.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "accept": "application/json",
+                    "api-key": api_key,
+                    "content-type": "application/json",
+                },
+                json={
+                    "sender": {"name": "Ricrene", "email": "ricreneinvestments@gmail.com"},
+                    "to": [{"email": email} for email in recipient_list],
+                    "subject": subject,
+                    "textContent": message,
+                }
             )
 
-            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-                to=[{"email": email} for email in recipient_list],
-                sender={"name": "Ricrene", "email": "ricreneinvestments@gmail.com"},
-                subject=subject,
-                text_content=message,
-            )
-
-            api_instance.send_transac_email(send_smtp_email)
-            logger.info("Email sent via Brevo API to %s", recipient_list)
+            if response.status_code == 201:
+                logger.info("Email sent via Brevo to %s", recipient_list)
+            else:
+                logger.error("Brevo rejected email: %s %s", response.status_code, response.text)
 
         except Exception as e:
             logger.error("Brevo API email failed: %s", e)
