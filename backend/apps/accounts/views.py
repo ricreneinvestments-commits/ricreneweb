@@ -11,6 +11,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 import logging
 import threading
+import os
+import time
 
 from .models import ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice, Service
 from .serializers import (
@@ -37,19 +39,36 @@ class ContactThrottle(AnonRateThrottle):
 # ── Email Helpers ─────────────────────────────────────────────────────────────
 
 def send_email_async(subject, message, from_email, recipient_list):
-    """Send email in background thread — never blocks the request."""
+    """Send email via Brevo API — works on Render free tier."""
     def _send():
         try:
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=from_email,
-                recipient_list=recipient_list,
-                fail_silently=True,
+            import sib_api_v3_sdk
+            from sib_api_v3_sdk.rest import ApiException
+
+            api_key = os.getenv('BREVO_API_KEY')
+            if not api_key:
+                logger.warning("BREVO_API_KEY not set — email skipped")
+                return
+
+            configuration = sib_api_v3_sdk.Configuration()
+            configuration.api_key['api-key'] = api_key
+
+            api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+                sib_api_v3_sdk.ApiClient(configuration)
             )
-            logger.info("Email sent successfully to %s", recipient_list)
+
+            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+                to=[{"email": email} for email in recipient_list],
+                sender={"name": "Ricrene", "email": "ricreneinvestments@gmail.com"},
+                subject=subject,
+                text_content=message,
+            )
+
+            api_instance.send_transac_email(send_smtp_email)
+            logger.info("Email sent via Brevo API to %s", recipient_list)
+
         except Exception as e:
-            logger.error("Email failed: %s", e)
+            logger.error("Brevo API email failed: %s", e)
 
     thread = threading.Thread(target=_send)
     thread.daemon = True
