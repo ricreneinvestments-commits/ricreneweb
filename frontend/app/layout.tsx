@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Navbar from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { Providers } from "./Providers";
+import PageLoader from "@/components/PageLoader";
+import ConditionalShell from "@/components/ConditionalShell";
 import "./globals.css";
 
 // ── Font ──────────────────────────────────────────────────────────────────────
@@ -33,8 +33,8 @@ const structuredData = {
   "url": siteInfo.url,
   "logo": `${siteInfo.url}/images/logo.png`,
   "image": `${siteInfo.url}/images/og-image.jpg`,
-  "telephone": "+255-000-000-000",
-  "email": "info@ricrene.co.tz",
+  "telephone": "+255-674-114-407",
+  "email": "ricreneinvestments@gmail.com",
   "address": {
     "@type": "PostalAddress",
     "addressLocality": "Dar es Salaam",
@@ -50,7 +50,7 @@ const structuredData = {
     "name": "Tanzania"
   },
   "priceRange": "TZS 50,000 – 10,000,000",
-  "openingHours": "Mo-Fr 08:00-17:00",
+  "openingHours": "Mo-Sa 09:00-17:00",
   "sameAs": [],
   "hasOfferCatalog": {
     "@type": "OfferCatalog",
@@ -131,7 +131,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Add your Google Search Console verification token here once you register the domain
+    // Add your Google Search Console verification token here once domain is registered
     // google: "your-verification-token",
   },
 };
@@ -168,11 +168,10 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-white text-gray-900">
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">
+          <PageLoader />
+          <ConditionalShell>
             {children}
-          </main>
-          <Footer />
+          </ConditionalShell>
         </Providers>
       </body>
     </html>

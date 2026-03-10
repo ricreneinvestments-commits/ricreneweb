@@ -65,9 +65,12 @@ const navigationContent = {
   },
   contact: {
     email: "ricreneinvestments@gmail.com",
-    phone: "+255 746 014 407",
+    phones: [
+      "+255 674 114 407",
+      "+255 784 075 702"
+    ],
     address: "Samora Tower, Dar es Salaam, Tanzania",
-  },
+},
 };
 
 const siteContent = {
@@ -198,12 +201,21 @@ export function Footer() {
                 </a>
               </li>
               <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-red-500 shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <a href={`tel:${navigationContent.contact.phone}`} className="text-gray-400 hover:text-white transition-colors text-sm">
-                  {navigationContent.contact.phone}
-                </a>
+
+                <div className="flex flex-col">
+                  {navigationContent.contact.phones.map((phone, index) => (
+                    <a
+                      key={index}
+                      href={`tel:${phone.replace(/\s/g, "")}`}
+                      className="text-gray-400 hover:text-white transition-colors text-sm"
+                    >
+                      {phone}
+                    </a>
+                  ))}
+                </div>
               </li>
               <li className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
