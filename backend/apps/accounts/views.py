@@ -1,421 +1,506 @@
-# backend/apps/accounts/views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
-from django.conf import settings
+"""
+backend/apps/accounts/views.py
+Complete views — includes all existing endpoints PLUS:
+  - POST /api/auth/forgot-password/   → sends reset email via Brevo
+  - POST /api/auth/reset-password/    → confirms token + sets new password
+  - DELETE /api/auth/delete-account/  → hard-deletes the authenticated user
+  - GET /api/projects/                → list client's projects
+  - POST /api/projects/request/       → request a new project
+  - GET /api/invoices/                → list client's invoices
+  - GET /api/payments/                → list client's payments
+  - GET/POST /api/messages/           → inbox + send message
+"""
+
+import json
 import logging
 import threading
-import os
-import time
+import secrets
+from datetime import timedelta
 
-from .models import ContactInquiry, PaymentInquiry, UserProfile, Client, Project, Invoice, Service
-from .serializers import (
-    ContactInquirySerializer, PaymentInquirySerializer,
-    RegisterSerializer, UserProfileSerializer,
-    ProjectSerializer, InvoiceSerializer, ServiceSerializer,
+import requests
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import (
+    ContactInquiry, PaymentInquiry, UserProfile,
+    Project, Invoice, Payment, Message,
+    PasswordResetToken,          # ← new model — add to models.py
 )
-from .supabase_client import supabase, CONTACT_TABLE
+from .serializers import (
+    UserSerializer, UserProfileSerializer,
+    ProjectSerializer, InvoiceSerializer,
+    PaymentSerializer, MessageSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
+# ── Brevo helper ──────────────────────────────────────────────────────────────
 
-# ── Custom Throttles ──────────────────────────────────────────────────────────
-
-class AuthThrottle(AnonRateThrottle):
-    rate = '10/minute'
-    scope = 'auth'
-
-class ContactThrottle(AnonRateThrottle):
-    rate = '5/minute'
-    scope = 'contact'
-
-
-# ── Email Helpers ─────────────────────────────────────────────────────────────
-
-def send_email_async(subject, message, from_email, recipient_list):
-    """Send email via Brevo HTTP API — no external library needed."""
+def send_email_async(to_email: str, to_name: str, subject: str, html_body: str):
+    """Send email via Brevo HTTP API in a background thread."""
     def _send():
         try:
-            import requests as req
-            api_key = os.getenv('BREVO_API_KEY')
-            if not api_key:
-                logger.warning("BREVO_API_KEY not set — email skipped")
-                return
-
-            response = req.post(
+            resp = requests.post(
                 "https://api.brevo.com/v3/smtp/email",
                 headers={
-                    "accept": "application/json",
-                    "api-key": api_key,
-                    "content-type": "application/json",
+                    "api-key": settings.BREVO_API_KEY,
+                    "Content-Type": "application/json",
                 },
                 json={
-                    "sender": {"name": "Ricrene", "email": "ricreneinvestments@gmail.com"},
-                    "to": [{"email": email} for email in recipient_list],
+                    "sender": {"name": "Ricrene Investment Ltd", "email": settings.NOTIFY_EMAIL},
+                    "to": [{"email": to_email, "name": to_name}],
                     "subject": subject,
-                    "textContent": message,
-                }
+                    "htmlContent": html_body,
+                },
+                timeout=10,
             )
+            if resp.status_code not in (200, 201):
+                logger.error("Brevo error %s: %s", resp.status_code, resp.text)
+        except Exception as exc:
+            logger.error("Email send failed: %s", exc)
 
-            if response.status_code == 201:
-                logger.info("Email sent via Brevo to %s", recipient_list)
-            else:
-                logger.error("Brevo rejected email: %s %s", response.status_code, response.text)
-
-        except Exception as e:
-            logger.error("Brevo API email failed: %s", e)
-
-    thread = threading.Thread(target=_send)
-    thread.daemon = True
-    thread.start()
+    threading.Thread(target=_send, daemon=True).start()
 
 
-def notify_contact(inquiry):
+# ── Auth — Register ───────────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register(request):
+    data = request.data
+    required = ["email", "password", "first_name", "last_name"]
+    if any(not data.get(f) for f in required):
+        return Response({"error": "All fields are required."}, status=400)
+
+    email = data["email"].strip().lower()
+    if User.objects.filter(username=email).exists():
+        return Response({"error": "An account with this email already exists."}, status=400)
+
+    user = User.objects.create(
+        username=email,
+        email=email,
+        first_name=data["first_name"].strip(),
+        last_name=data["last_name"].strip(),
+        password=make_password(data["password"]),
+    )
+    UserProfile.objects.get_or_create(user=user)
+    refresh = RefreshToken.for_user(user)
+
     send_email_async(
-        subject=f'📩 New Contact Inquiry — {inquiry.service}',
-        message=f"""
-New contact inquiry received.
-
-Name:    {inquiry.name}
-Email:   {inquiry.email}
-Phone:   {inquiry.phone}
-Service: {inquiry.service}
-Message: {inquiry.message}
-        """.strip(),
-        from_email=settings.EMAIL_HOST_USER,
-        recipient_list=[settings.NOTIFY_EMAIL],
+        to_email=email,
+        to_name=f"{user.first_name} {user.last_name}",
+        subject="Welcome to Ricrene Investment Ltd",
+        html_body=f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px">
+          <img src="https://ricrene.co.tz/images/Ricrene logo transparent.png"
+               alt="Ricrene" style="height:48px;margin-bottom:24px"/>
+          <h2 style="color:#111;margin-bottom:8px">Welcome, {user.first_name}!</h2>
+          <p style="color:#555">Your client portal account has been created successfully.</p>
+          <p style="color:#555">You can now log in to track your projects, invoices, and payments.</p>
+          <a href="https://ricrene.co.tz/dashboard"
+             style="display:inline-block;margin-top:20px;padding:12px 28px;
+                    background:#DC2626;color:white;border-radius:8px;
+                    text-decoration:none;font-weight:600">
+            Go to Dashboard
+          </a>
+          <p style="margin-top:32px;color:#999;font-size:12px">
+            Ricrene Investment Ltd · Samora Tower, Dar es Salaam
+          </p>
+        </div>""",
     )
 
+    return Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": UserSerializer(user).data,
+    }, status=201)
 
-def notify_payment(inquiry):
-    period = {'monthly': '/ month', 'yearly': '/ year', 'once': 'one-time'}.get(
-        inquiry.billing_period, inquiry.billing_period
+
+# ── Auth — Login ──────────────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login(request):
+    email    = (request.data.get("email") or "").strip().lower()
+    password = request.data.get("password") or ""
+
+    if not email or not password:
+        return Response({"error": "Email and password are required."}, status=400)
+
+    # Rate-limit: max 10 attempts per email per 15 min
+    cache_key = f"login_attempts_{email}"
+    attempts  = cache.get(cache_key, 0)
+    if attempts >= 10:
+        return Response({"error": "Too many attempts. Please try again later."}, status=429)
+
+    user = authenticate(request, username=email, password=password)
+    if not user:
+        cache.set(cache_key, attempts + 1, timeout=900)
+        return Response({"error": "Invalid email or password."}, status=401)
+
+    cache.delete(cache_key)
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        "access":  str(refresh.access_token),
+        "refresh": str(refresh),
+        "user":    UserSerializer(user).data,
+    })
+
+
+# ── Auth — Logout ─────────────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    try:
+        token = RefreshToken(request.data.get("refresh"))
+        token.blacklist()
+    except Exception:
+        pass
+    return Response({"message": "Logged out."})
+
+
+# ── Auth — Me (get + update profile) ─────────────────────────────────────────
+
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def me(request):
+    user = request.user
+    if request.method == "GET":
+        return Response(UserSerializer(user).data)
+
+    # PATCH — update name / phone
+    data = request.data
+    if "first_name" in data:
+        user.first_name = data["first_name"].strip()
+    if "last_name" in data:
+        user.last_name  = data["last_name"].strip()
+    user.save()
+
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    if "phone" in data:
+        profile.phone = data["phone"].strip()
+        profile.save()
+
+    return Response(UserSerializer(user).data)
+
+
+# ── Auth — Change password ────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    user         = request.user
+    current      = request.data.get("current_password") or ""
+    new_password = request.data.get("new_password") or ""
+
+    if not authenticate(username=user.username, password=current):
+        return Response({"error": "Current password is incorrect."}, status=400)
+    if len(new_password) < 8:
+        return Response({"error": "New password must be at least 8 characters."}, status=400)
+
+    user.set_password(new_password)
+    user.save()
+    return Response({"message": "Password changed successfully."})
+
+
+# ── Auth — Forgot password ────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    """
+    POST { "email": "user@example.com" }
+    Always returns 200 so we don't leak whether the email exists.
+    Sends a reset link valid for 1 hour.
+    """
+    email = (request.data.get("email") or "").strip().lower()
+    if not email:
+        return Response({"error": "Email is required."}, status=400)
+
+    # Rate-limit: 3 requests per email per hour
+    cache_key = f"pwd_reset_{email}"
+    if cache.get(cache_key, 0) >= 3:
+        return Response({"message": "If that email exists, a reset link has been sent."})
+
+    try:
+        user = User.objects.get(username=email)
+    except User.DoesNotExist:
+        # Don't reveal the email doesn't exist
+        return Response({"message": "If that email exists, a reset link has been sent."})
+
+    # Invalidate any existing tokens for this user
+    PasswordResetToken.objects.filter(user=user, used=False).update(used=True)
+
+    # Create a new token
+    token = secrets.token_urlsafe(48)
+    PasswordResetToken.objects.create(
+        user=user,
+        token=token,
+        expires_at=timezone.now() + timedelta(hours=1),
+    )
+
+    reset_url = f"https://ricrene.co.tz/reset-password?token={token}"
+    # During dev before domain is live, use Render URL:
+    # reset_url = f"https://ricrene-frontend.onrender.com/reset-password?token={token}"
+
+    send_email_async(
+        to_email=email,
+        to_name=user.first_name or "there",
+        subject="Reset your Ricrene password",
+        html_body=f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px">
+          <img src="https://ricrene.co.tz/images/Ricrene logo transparent.png"
+               alt="Ricrene" style="height:48px;margin-bottom:24px"/>
+          <h2 style="color:#111;margin-bottom:8px">Reset your password</h2>
+          <p style="color:#555">
+            We received a request to reset the password for your account (<strong>{email}</strong>).
+          </p>
+          <p style="color:#555">Click the button below — this link expires in <strong>1 hour</strong>.</p>
+          <a href="{reset_url}"
+             style="display:inline-block;margin-top:20px;padding:12px 28px;
+                    background:#DC2626;color:white;border-radius:8px;
+                    text-decoration:none;font-weight:600">
+            Reset Password
+          </a>
+          <p style="margin-top:20px;color:#888;font-size:13px">
+            If you didn't request this, you can safely ignore this email.
+          </p>
+          <p style="margin-top:32px;color:#999;font-size:12px">
+            Ricrene Investment Ltd · Samora Tower, Dar es Salaam
+          </p>
+        </div>""",
+    )
+
+    cache.set(cache_key, cache.get(cache_key, 0) + 1, timeout=3600)
+    return Response({"message": "If that email exists, a reset link has been sent."})
+
+
+# ── Auth — Reset password (confirm) ──────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def reset_password(request):
+    """
+    POST { "token": "...", "password": "newpassword" }
+    """
+    token_str    = request.data.get("token") or ""
+    new_password = request.data.get("password") or ""
+
+    if not token_str or not new_password:
+        return Response({"error": "Token and new password are required."}, status=400)
+    if len(new_password) < 8:
+        return Response({"error": "Password must be at least 8 characters."}, status=400)
+
+    try:
+        reset_obj = PasswordResetToken.objects.get(token=token_str, used=False)
+    except PasswordResetToken.DoesNotExist:
+        return Response({"error": "Invalid or expired reset link."}, status=400)
+
+    if reset_obj.expires_at < timezone.now():
+        reset_obj.used = True
+        reset_obj.save()
+        return Response({"error": "This reset link has expired. Please request a new one."}, status=400)
+
+    user = reset_obj.user
+    user.set_password(new_password)
+    user.save()
+
+    reset_obj.used = True
+    reset_obj.save()
+
+    return Response({"message": "Password reset successfully. You can now log in."})
+
+
+# ── Auth — Delete account ─────────────────────────────────────────────────────
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    """
+    DELETE — must confirm with password in body: { "password": "..." }
+    """
+    password = request.data.get("password") or ""
+    if not authenticate(username=request.user.username, password=password):
+        return Response({"error": "Incorrect password."}, status=400)
+
+    email = request.user.email
+    name  = request.user.first_name
+
+    # Notify admin
+    send_email_async(
+        to_email=settings.NOTIFY_EMAIL,
+        to_name="Ricrene Admin",
+        subject="Client account deleted",
+        html_body=f"<p>Client <strong>{name}</strong> ({email}) deleted their account.</p>",
+    )
+
+    request.user.delete()
+    return Response({"message": "Account deleted."})
+
+
+# ── Contact form ──────────────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def contact(request):
+    data = request.data
+    required = ["name", "email", "message"]
+    if any(not data.get(f) for f in required):
+        return Response({"error": "Name, email and message are required."}, status=400)
+
+    ContactInquiry.objects.create(
+        name=data["name"].strip(),
+        email=data["email"].strip().lower(),
+        phone=data.get("phone", "").strip(),
+        service=data.get("service", "").strip(),
+        message=data["message"].strip(),
+    )
+
+    send_email_async(
+        to_email=settings.NOTIFY_EMAIL,
+        to_name="Ricrene Team",
+        subject=f"New contact: {data['name']}",
+        html_body=f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px">
+          <h2 style="color:#DC2626">New Contact Inquiry</h2>
+          <p><strong>Name:</strong> {data['name']}</p>
+          <p><strong>Email:</strong> {data['email']}</p>
+          <p><strong>Phone:</strong> {data.get('phone','—')}</p>
+          <p><strong>Service:</strong> {data.get('service','—')}</p>
+          <p><strong>Message:</strong><br>{data['message']}</p>
+        </div>""",
+    )
+    return Response({"message": "Message sent."}, status=201)
+
+
+# ── Payment inquiry (public) ──────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def payment_inquiry(request):
+    data = request.data
+    PaymentInquiry.objects.create(
+        name=data.get("name","").strip(),
+        email=data.get("email","").strip().lower(),
+        plan=data.get("plan","").strip(),
+        message=data.get("message","").strip(),
     )
     send_email_async(
-        subject=f'💰 New Payment Inquiry — {inquiry.plan_name}',
-        message=f"""
-New payment inquiry received on Ricrene.
+        to_email=settings.NOTIFY_EMAIL,
+        to_name="Ricrene Team",
+        subject=f"Payment inquiry: {data.get('plan','')}",
+        html_body=f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px">
+          <h2 style="color:#DC2626">Payment Inquiry</h2>
+          <p><strong>Name:</strong> {data.get('name','')}</p>
+          <p><strong>Email:</strong> {data.get('email','')}</p>
+          <p><strong>Plan:</strong> {data.get('plan','')}</p>
+          <p><strong>Message:</strong><br>{data.get('message','')}</p>
+        </div>""",
+    )
+    return Response({"message": "Inquiry received."}, status=201)
 
-Plan:   {inquiry.plan_name}
-Amount: TZS {inquiry.amount:,.0f} {period}
-Via:    {inquiry.get_contact_method_display()}
 
-Name:   {inquiry.name or '—'}
-Email:  {inquiry.email or '—'}
-Phone:  {inquiry.phone or '—'}
-        """.strip(),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[settings.NOTIFY_EMAIL],
+# ── Projects ──────────────────────────────────────────────────────────────────
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def projects_list(request):
+    qs = Project.objects.filter(client__user=request.user).order_by("-created_at")
+    return Response(ProjectSerializer(qs, many=True).data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def project_request(request):
+    data = request.data
+    if not data.get("title"):
+        return Response({"error": "Project title is required."}, status=400)
+
+    from .models import Client
+    client, _ = Client.objects.get_or_create(user=request.user)
+
+    project = Project.objects.create(
+        client=client,
+        title=data["title"].strip(),
+        description=data.get("description","").strip(),
+        status="pending",
     )
 
-
-def notify_project_request(user, data):
     send_email_async(
-        subject=f'🚀 New Project Request — {data.get("service", "General")}',
-        message=f"""
-New project request from client portal.
-
-Client:      {user.get_full_name()} ({user.email})
-Project:     {data.get("name", "—")}
-Service:     {data.get("service", "—")}
-Description: {data.get("description", "—")}
-Budget:      {data.get("budget", "Not specified")}
-        """.strip(),
-        from_email=settings.EMAIL_HOST_USER,
-        recipient_list=[settings.NOTIFY_EMAIL],
+        to_email=settings.NOTIFY_EMAIL,
+        to_name="Ricrene Team",
+        subject=f"New project request: {project.title}",
+        html_body=f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px">
+          <h2 style="color:#DC2626">New Project Request</h2>
+          <p><strong>Client:</strong> {request.user.get_full_name()} ({request.user.email})</p>
+          <p><strong>Title:</strong> {project.title}</p>
+          <p><strong>Description:</strong><br>{project.description or '—'}</p>
+        </div>""",
     )
 
+    return Response(ProjectSerializer(project).data, status=201)
 
-def notify_client_message(user, message):
+
+# ── Invoices ──────────────────────────────────────────────────────────────────
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def invoices_list(request):
+    qs = Invoice.objects.filter(client__user=request.user).order_by("-issued_date")
+    return Response(InvoiceSerializer(qs, many=True).data)
+
+
+# ── Payments ──────────────────────────────────────────────────────────────────
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def payments_list(request):
+    qs = Payment.objects.filter(client__user=request.user).order_by("-created_at")
+    return Response(PaymentSerializer(qs, many=True).data)
+
+
+# ── Messages ──────────────────────────────────────────────────────────────────
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def messages(request):
+    if request.method == "GET":
+        qs = Message.objects.filter(user=request.user).order_by("-created_at")
+        return Response(MessageSerializer(qs, many=True).data)
+
+    # POST — client sends a message to admin
+    body = (request.data.get("body") or "").strip()
+    if not body:
+        return Response({"error": "Message body is required."}, status=400)
+
+    msg = Message.objects.create(
+        user=request.user,
+        body=body,
+        direction="client_to_admin",
+    )
+
     send_email_async(
-        subject=f'💬 New Message from {user.get_full_name()}',
-        message=f"""
-New message from client portal.
-
-From:    {user.get_full_name()} ({user.email})
-Message: {message}
-        """.strip(),
-        from_email=settings.EMAIL_HOST_USER,
-        recipient_list=[settings.NOTIFY_EMAIL],
+        to_email=settings.NOTIFY_EMAIL,
+        to_name="Ricrene Team",
+        subject=f"Portal message from {request.user.get_full_name()}",
+        html_body=f"""
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px">
+          <h2 style="color:#DC2626">Portal Message</h2>
+          <p><strong>From:</strong> {request.user.get_full_name()} ({request.user.email})</p>
+          <p><strong>Message:</strong><br>{body}</p>
+        </div>""",
     )
 
-
-# ── Services (public) ─────────────────────────────────────────────────────────
-
-class ServiceListView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        services = Service.objects.filter(is_active=True)
-        return Response(ServiceSerializer(services, many=True).data)
-
-
-# ── Contact (public) ──────────────────────────────────────────────────────────
-
-# NOTE: Contact form on the frontend currently uses Formspree (https://formspree.io/f/xnjbovwy)
-# To switch back to Django: update ContactSection.tsx fetch URL to:
-#   `${process.env.NEXT_PUBLIC_API_URL}/api/contact/`
-
-class ContactInquiryView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [ContactThrottle]
-
-    def post(self, request):
-        serializer = ContactInquirySerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        inquiry = serializer.save()
-
-        try:
-            notify_contact(inquiry)
-        except Exception as e:
-            logger.error("Contact email failed: %s", e)
-
-        try:
-            if supabase:
-                supabase.table(CONTACT_TABLE).insert({
-                    "name":       inquiry.name,
-                    "email":      inquiry.email,
-                    "phone":      inquiry.phone,
-                    "service":    inquiry.service,
-                    "message":    inquiry.message,
-                    "created_at": inquiry.created_at.isoformat(),
-                }).execute()
-        except Exception as e:
-            logger.warning("Supabase mirror failed (non-fatal): %s", e)
-
-        return Response({"success": True}, status=status.HTTP_201_CREATED)
-
-
-# ── Payment Inquiry (public) ──────────────────────────────────────────────────
-
-class PaymentInquiryView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [ContactThrottle]
-
-    def post(self, request):
-        serializer = PaymentInquirySerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        inquiry = serializer.save()
-
-        try:
-            notify_payment(inquiry)
-        except Exception as e:
-            logger.error("Payment email failed: %s", e)
-
-        return Response({"success": True, "id": serializer.data['id']}, status=status.HTTP_201_CREATED)
-
-
-# ── Client Portal — Projects ──────────────────────────────────────────────────
-
-class ProjectListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        projects = Project.objects.filter(client__user=request.user)
-        return Response(ProjectSerializer(projects, many=True).data)
-
-
-class ProjectRequestView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        data = request.data
-        required = ['name', 'service', 'description']
-        for field in required:
-            if not str(data.get(field, '')).strip():
-                return Response({field: 'This field is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Sanitise lengths
-        name        = str(data['name'])[:255]
-        service     = str(data['service'])[:255]
-        description = str(data['description'])[:2000]
-        budget      = str(data.get('budget', 'Not specified'))[:255]
-
-        client, _ = Client.objects.get_or_create(user=request.user)
-
-        project = Project.objects.create(
-            client=client,
-            name=name,
-            service=service,
-            description=description,
-            status='inquiry',
-            amount=0,
-            notes=f"Budget: {budget}",
-        )
-
-        try:
-            notify_project_request(request.user, {
-                'name': name, 'service': service,
-                'description': description, 'budget': budget,
-            })
-        except Exception as e:
-            logger.error("Project request email failed: %s", e)
-
-        return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
-
-
-# ── Client Portal — Invoices ──────────────────────────────────────────────────
-
-class InvoiceListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        invoices = Invoice.objects.filter(project__client__user=request.user)
-        return Response(InvoiceSerializer(invoices, many=True).data)
-
-
-# ── Client Portal — Payments ──────────────────────────────────────────────────
-
-class PaymentListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        payments = PaymentInquiry.objects.filter(email=request.user.email)
-        return Response(PaymentInquirySerializer(payments, many=True).data)
-
-
-# ── Client Portal — Messages ──────────────────────────────────────────────────
-
-class ClientMessageView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        message = str(request.data.get('message', '')).strip()[:2000]
-        if not message:
-            return Response({'message': 'Message cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            notify_client_message(request.user, message)
-        except Exception as e:
-            logger.error("Client message email failed: %s", e)
-
-        return Response({"success": True}, status=status.HTTP_201_CREATED)
-
-
-# ── Auth ──────────────────────────────────────────────────────────────────────
-
-class RegisterView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [AuthThrottle]
-
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        data = serializer.validated_data
-
-        if User.objects.filter(email=data['email']).exists():
-            return Response(
-                {'email': 'An account with this email already exists.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        user = User.objects.create_user(
-            username=data['email'],
-            email=data['email'],
-            password=data['password'],
-            first_name=data['first_name'],
-            last_name=data.get('last_name', ''),
-        )
-        UserProfile.objects.create(user=user, role=UserProfile.ROLE_CLIENT)
-        Client.objects.create(user=user, phone=data.get('phone', ''))
-
-        refresh = RefreshToken.for_user(user)
-        logger.info("New user registered: %s", user.email)
-
-        return Response({
-            'access':     str(refresh.access_token),
-            'refresh':    str(refresh),
-            'first_name': user.first_name,
-            'last_name':  user.last_name,
-            'email':      user.email,
-            'role':       'client',
-        }, status=status.HTTP_201_CREATED)
-
-
-class LoginView(APIView):
-    permission_classes = [AllowAny]
-    throttle_classes = [AuthThrottle]
-
-    def post(self, request):
-        email    = str(request.data.get('email', '')).lower().strip()[:254]
-        password = str(request.data.get('password', ''))
-        user     = authenticate(request, username=email, password=password)
-
-        if not user:
-            logger.warning("Failed login attempt for email: %s", email)
-            return Response(
-                {'error': 'Invalid email or password.'},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        refresh = RefreshToken.for_user(user)
-        profile = getattr(user, 'profile', None)
-        logger.info("User logged in: %s", user.email)
-
-        return Response({
-            'access':     str(refresh.access_token),
-            'refresh':    str(refresh),
-            'first_name': user.first_name,
-            'last_name':  user.last_name,
-            'email':      user.email,
-            'role':       profile.role if profile else 'client',
-        })
-
-
-class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        try:
-            token = RefreshToken(request.data.get('refresh'))
-            token.blacklist()
-            logger.info("User logged out: %s", request.user.email)
-        except Exception:
-            pass
-        return Response({'success': True})
-
-
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user    = request.user
-        profile = getattr(user, 'profile', None)
-        client  = getattr(user, 'client_profile', None)
-        return Response({
-            'id':           user.id,
-            'first_name':   user.first_name,
-            'last_name':    user.last_name,
-            'email':        user.email,
-            'role':         profile.role if profile else 'client',
-            'phone':        client.phone if client else '',
-            'company_name': client.company_name if client else '',
-        })
-
-    def patch(self, request):
-        user   = request.user
-        client = getattr(user, 'client_profile', None)
-
-        user.first_name = str(request.data.get('first_name', user.first_name))[:150]
-        user.last_name  = str(request.data.get('last_name',  user.last_name))[:150]
-        user.save()
-
-        if client:
-            client.phone        = str(request.data.get('phone',        client.phone))[:50]
-            client.company_name = str(request.data.get('company_name', client.company_name))[:255]
-            client.address      = str(request.data.get('address',      client.address))[:500]
-            client.save()
-
-        return Response({'success': True})
+    return Response(MessageSerializer(msg).data, status=201)

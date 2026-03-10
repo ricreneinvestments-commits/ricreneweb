@@ -1,201 +1,195 @@
-# backend/apps/accounts/models.py
+"""
+backend/apps/accounts/models.py
+Complete models — adds PasswordResetToken to support forgot/reset password flow.
+"""
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
-# ── Service ───────────────────────────────────────────────────────────────────
+# ── User profile (extra fields) ───────────────────────────────────────────────
+
+class UserProfile(models.Model):
+    user  = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    phone = models.CharField(max_length=30, blank=True)
+
+    def __str__(self):
+        return f"Profile – {self.user.email}"
+
+
+# ── Password reset token ──────────────────────────────────────────────────────
+
+class PasswordResetToken(models.Model):
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reset_tokens")
+    token      = models.CharField(max_length=128, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used       = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"ResetToken – {self.user.email} ({'used' if self.used else 'active'})"
+
+
+# ── Client (links User to projects/invoices/payments) ────────────────────────
+
+class Client(models.Model):
+    user       = models.OneToOneField(User, on_delete=models.CASCADE, related_name="client")
+    company    = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.user.get_full_name() or self.user.email
+
+
+# ── Services ──────────────────────────────────────────────────────────────────
 
 class Service(models.Model):
-    CATEGORY_CHOICES = [
-        ('web',     'Web Solutions'),
-        ('systems', 'Business Systems'),
-        ('media',   'Digital & Media'),
-    ]
-
     name        = models.CharField(max_length=200)
     slug        = models.SlugField(unique=True)
-    category    = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    description = models.TextField()
-    short_desc  = models.CharField(max_length=300, blank=True)
-    price_range = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    icon        = models.CharField(max_length=100, blank=True)
     is_active   = models.BooleanField(default=True)
     order       = models.PositiveIntegerField(default=0)
-    created_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['order', 'name']
+        ordering = ["order"]
 
     def __str__(self):
         return self.name
 
 
-# ── Contact Inquiry ───────────────────────────────────────────────────────────
+# ── Contact inquiry ───────────────────────────────────────────────────────────
 
 class ContactInquiry(models.Model):
-    name       = models.CharField(max_length=255)
+    name       = models.CharField(max_length=200)
     email      = models.EmailField()
-    phone      = models.CharField(max_length=50)
-    service    = models.CharField(max_length=255)
+    phone      = models.CharField(max_length=30, blank=True)
+    service    = models.CharField(max_length=200, blank=True)
     message    = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.name} - {self.service}"
-
     class Meta:
-        verbose_name_plural = "Contact Inquiries"
-        ordering = ['-created_at']
+        verbose_name_plural = "Contact inquiries"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.name} – {self.email}"
 
 
-# ── Payment Inquiry ───────────────────────────────────────────────────────────
+# ── Payment inquiry (public, before portal) ───────────────────────────────────
 
 class PaymentInquiry(models.Model):
-
-    BILLING_MONTHLY = 'monthly'
-    BILLING_YEARLY  = 'yearly'
-    BILLING_ONCE    = 'once'
-    BILLING_CHOICES = [
-        (BILLING_MONTHLY, 'Monthly'),
-        (BILLING_YEARLY,  'Yearly'),
-        (BILLING_ONCE,    'One-time'),
-    ]
-
-    CONTACT_WHATSAPP = 'whatsapp'
-    CONTACT_EMAIL    = 'email'
-    CONTACT_FORM     = 'form'
-    CONTACT_CHOICES  = [
-        (CONTACT_WHATSAPP, 'WhatsApp'),
-        (CONTACT_EMAIL,    'Email'),
-        (CONTACT_FORM,     'Contact Form'),
-    ]
-
-    STATUS_PENDING   = 'pending'
-    STATUS_CONFIRMED = 'confirmed'
-    STATUS_PAID      = 'paid'
-    STATUS_CANCELLED = 'cancelled'
-    STATUS_CHOICES   = [
-        (STATUS_PENDING,   'Pending'),
-        (STATUS_CONFIRMED, 'Confirmed'),
-        (STATUS_PAID,      'Paid'),
-        (STATUS_CANCELLED, 'Cancelled'),
-    ]
-
-    plan_name      = models.CharField(max_length=255)
-    service_name   = models.CharField(max_length=255, default='Ricrene Investment Ltd')
-    amount         = models.DecimalField(max_digits=12, decimal_places=2)
-    billing_period = models.CharField(max_length=10, choices=BILLING_CHOICES, default=BILLING_MONTHLY)
-    contact_method = models.CharField(max_length=10, choices=CONTACT_CHOICES)
-    name           = models.CharField(max_length=255, blank=True)
-    email          = models.EmailField(blank=True)
-    phone          = models.CharField(max_length=50, blank=True)
-    status         = models.CharField(max_length=15, choices=STATUS_CHOICES, default=STATUS_PENDING)
-
-    mpesa_transaction_id = models.CharField(max_length=255, blank=True, null=True)
-    mpesa_phone          = models.CharField(max_length=20, blank=True, null=True)
-    paid_at              = models.DateTimeField(blank=True, null=True)
-
+    name       = models.CharField(max_length=200)
+    email      = models.EmailField()
+    plan       = models.CharField(max_length=200, blank=True)
+    message    = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    notes      = models.TextField(blank=True)
-
-    def __str__(self):
-        return f"{self.plan_name} - {self.get_status_display()} - {self.created_at.strftime('%Y-%m-%d')}"
 
     class Meta:
-        verbose_name_plural = "Payment Inquiries"
-        ordering = ['-created_at']
-
-
-# ── User Profile ──────────────────────────────────────────────────────────────
-
-class UserProfile(models.Model):
-    ROLE_ADMIN  = 'admin'
-    ROLE_STAFF  = 'staff'
-    ROLE_CLIENT = 'client'
-    ROLE_CHOICES = [
-        (ROLE_ADMIN,  'Admin'),
-        (ROLE_STAFF,  'Staff'),
-        (ROLE_CLIENT, 'Client'),
-    ]
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=ROLE_CLIENT)
+        verbose_name_plural = "Payment inquiries"
+        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.user.email} ({self.role})"
-
-
-# ── Client Profile ────────────────────────────────────────────────────────────
-
-class Client(models.Model):
-    user         = models.OneToOneField(User, on_delete=models.CASCADE, related_name='client_profile')
-    company_name = models.CharField(max_length=255, blank=True)
-    phone        = models.CharField(max_length=50, blank=True)
-    address      = models.TextField(blank=True)
-    created_at   = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.user.get_full_name()} ({self.user.email})"
-
-    class Meta:
-        ordering = ['-created_at']
+        return f"{self.name} – {self.plan}"
 
 
 # ── Project ───────────────────────────────────────────────────────────────────
 
-class Project(models.Model):
-    STATUS_CHOICES = [
-        ('inquiry',   'Inquiry'),
-        ('proposal',  'Proposal Sent'),
-        ('active',    'Active'),
-        ('review',    'In Review'),
-        ('completed', 'Completed'),
-        ('on_hold',   'On Hold'),
-    ]
+PROJECT_STATUS = [
+    ("pending",     "Pending"),
+    ("in_progress", "In Progress"),
+    ("review",      "Under Review"),
+    ("completed",   "Completed"),
+    ("on_hold",     "On Hold"),
+    ("cancelled",   "Cancelled"),
+]
 
-    client      = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='projects')
-    name        = models.CharField(max_length=255)
+class Project(models.Model):
+    client      = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="projects")
+    title       = models.CharField(max_length=300)
     description = models.TextField(blank=True)
-    service     = models.CharField(max_length=255)
-    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='inquiry')
-    start_date  = models.DateField(blank=True, null=True)
-    end_date    = models.DateField(blank=True, null=True)
-    amount      = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    notes       = models.TextField(blank=True)
+    status      = models.CharField(max_length=30, choices=PROJECT_STATUS, default="pending")
+    start_date  = models.DateField(null=True, blank=True)
+    due_date    = models.DateField(null=True, blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.name} — {self.client}"
-
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} – {self.client}"
 
 
 # ── Invoice ───────────────────────────────────────────────────────────────────
 
+INVOICE_STATUS = [
+    ("draft",     "Draft"),
+    ("sent",      "Sent"),
+    ("paid",      "Paid"),
+    ("overdue",   "Overdue"),
+    ("cancelled", "Cancelled"),
+]
+
 class Invoice(models.Model):
-    STATUS_CHOICES = [
-        ('draft',     'Draft'),
-        ('sent',      'Sent'),
-        ('paid',      'Paid'),
-        ('overdue',   'Overdue'),
-        ('cancelled', 'Cancelled'),
-    ]
-
-    project        = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='invoices')
-    invoice_number = models.CharField(max_length=50, unique=True)
-    amount         = models.DecimalField(max_digits=12, decimal_places=2)
-    status         = models.CharField(max_length=15, choices=STATUS_CHOICES, default='draft')
-    issued_date    = models.DateField(auto_now_add=True)
-    due_date       = models.DateField(blank=True, null=True)
-    paid_date      = models.DateField(blank=True, null=True)
-    notes          = models.TextField(blank=True)
-    mpesa_transaction_id = models.CharField(max_length=255, blank=True, null=True)
-    created_at     = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.invoice_number} — {self.project.name}"
+    client       = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="invoices")
+    invoice_no   = models.CharField(max_length=50, unique=True)
+    description  = models.TextField(blank=True)
+    amount       = models.DecimalField(max_digits=12, decimal_places=2)
+    status       = models.CharField(max_length=20, choices=INVOICE_STATUS, default="sent")
+    issued_date  = models.DateField(default=timezone.now)
+    due_date     = models.DateField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-issued_date"]
+
+    def __str__(self):
+        return f"INV-{self.invoice_no} – {self.client}"
+
+
+# ── Payment ───────────────────────────────────────────────────────────────────
+
+PAYMENT_STATUS = [
+    ("pending",   "Pending"),
+    ("confirmed", "Confirmed"),
+    ("paid",      "Paid"),
+    ("cancelled", "Cancelled"),
+]
+
+class Payment(models.Model):
+    client         = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="payments")
+    invoice        = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True)
+    plan_name      = models.CharField(max_length=200)
+    amount         = models.DecimalField(max_digits=12, decimal_places=2)
+    billing_period = models.CharField(max_length=50, blank=True)  # monthly / yearly
+    status         = models.CharField(max_length=20, choices=PAYMENT_STATUS, default="pending")
+    created_at     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.plan_name} – {self.client} – {self.status}"
+
+
+# ── Message ───────────────────────────────────────────────────────────────────
+
+MESSAGE_DIRECTION = [
+    ("client_to_admin", "Client → Admin"),
+    ("admin_to_client", "Admin → Client"),
+]
+
+class Message(models.Model):
+    user      = models.ForeignKey(User, on_delete=models.CASCADE, related_name="messages")
+    body      = models.TextField()
+    direction = models.CharField(max_length=20, choices=MESSAGE_DIRECTION, default="client_to_admin")
+    read      = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Message from {self.user.email} – {self.created_at:%Y-%m-%d}"

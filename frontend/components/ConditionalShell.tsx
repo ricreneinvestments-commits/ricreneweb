@@ -14,6 +14,7 @@ const SHELL_EXCLUDED = [
   "/login",
   "/signup",
   "/forgot-password",
+  "/reset-password",
   "/dashboard",
 ];
 

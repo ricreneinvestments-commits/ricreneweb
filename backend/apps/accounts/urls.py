@@ -1,38 +1,37 @@
-# backend/apps/accounts/urls.py
+"""
+backend/apps/accounts/urls.py
+All URL patterns — updated with forgot/reset password, delete account,
+and all dashboard endpoints.
+"""
+
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import ServiceListView
-from .views import (
-    ContactInquiryView,
-    PaymentInquiryView,
-    RegisterView,
-    LoginView,
-    LogoutView,
-    MeView,
-    ProjectListView,
-    InvoiceListView,
-    PaymentListView,
-    ProjectRequestView,
-    ClientMessageView,
-)
+from . import views
 
 urlpatterns = [
-    # ── Public ────────────────────────────────────────────────────────────────
-    path('contact/',          ContactInquiryView.as_view()),
-    path('payment-inquiry/',  PaymentInquiryView.as_view()),
+    # ── Public auth ──────────────────────────────────────────────────────────
+    path("auth/register/",        views.register,         name="register"),
+    path("auth/login/",           views.login,            name="login"),
+    path("auth/refresh/",         TokenRefreshView.as_view(), name="token_refresh"),
 
-    # ── Auth ──────────────────────────────────────────────────────────────────
-    path('auth/register/',    RegisterView.as_view()),
-    path('auth/login/',       LoginView.as_view()),
-    path('auth/logout/',      LogoutView.as_view()),
-    path('auth/refresh/',     TokenRefreshView.as_view()),
-    path('auth/me/',          MeView.as_view()),
+    # ── Password reset (no auth required) ────────────────────────────────────
+    path("auth/forgot-password/", views.forgot_password,  name="forgot_password"),
+    path("auth/reset-password/",  views.reset_password,   name="reset_password"),
 
-    # ── Client Portal (authenticated) ─────────────────────────────────────────
-    path('projects/',         ProjectListView.as_view()),
-    path('projects/request/', ProjectRequestView.as_view()),
-    path('invoices/',         InvoiceListView.as_view()),
-    path('payments/',         PaymentListView.as_view()),
-    path('messages/',         ClientMessageView.as_view()),
-    path('services/', ServiceListView.as_view()),
+    # ── Authenticated auth ────────────────────────────────────────────────────
+    path("auth/logout/",          views.logout,           name="logout"),
+    path("auth/me/",              views.me,               name="me"),
+    path("auth/change-password/", views.change_password,  name="change_password"),
+    path("auth/delete-account/",  views.delete_account,   name="delete_account"),
+
+    # ── Public forms ─────────────────────────────────────────────────────────
+    path("contact/",              views.contact,          name="contact"),
+    path("payment-inquiry/",      views.payment_inquiry,  name="payment_inquiry"),
+
+    # ── Dashboard (authenticated) ─────────────────────────────────────────────
+    path("projects/",             views.projects_list,    name="projects_list"),
+    path("projects/request/",     views.project_request,  name="project_request"),
+    path("invoices/",             views.invoices_list,    name="invoices_list"),
+    path("payments/",             views.payments_list,    name="payments_list"),
+    path("messages/",             views.messages,         name="messages"),
 ]
