@@ -56,7 +56,7 @@ def send_email_async(to_email: str, to_name: str, subject: str, html_body: str):
                     "Content-Type": "application/json",
                 },
                 json={
-                    "sender": {"name": "Ricrene Investment Ltd", "email": settings.NOTIFY_EMAIL},
+                    "sender": {"name": "Ricrene Investment Ltd", "email": settings.BREVO_SENDER_EMAIL},
                     "to": [{"email": to_email, "name": to_name}],
                     "subject": subject,
                     "htmlContent": html_body,
@@ -249,9 +249,8 @@ def forgot_password(request):
         expires_at=timezone.now() + timedelta(hours=1),
     )
 
-    reset_url = f"https://ricrene.co.tz/reset-password?token={token}"
-    # During dev before domain is live, use Render URL:
-    # reset_url = f"https://ricrene-frontend.onrender.com/reset-password?token={token}"
+    frontend_url = getattr(settings, "FRONTEND_URL", "https://ricrene-frontend.onrender.com")
+    reset_url = f"{frontend_url}/reset-password?token={token}"
 
     send_email_async(
         to_email=email,

@@ -214,3 +214,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # ── Default primary key ───────────────────────────────────────────────────────
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── Brevo HTTP API (used by send_email_async in views.py) ─────────────────────
+
+BREVO_API_KEY      = os.getenv('BREVO_API_KEY', '')
+BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'ricreneinvestments@gmail.com')
+FRONTEND_URL       = os.getenv('FRONTEND_URL', 'https://ricrene-frontend.onrender.com')
