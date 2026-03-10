@@ -38,10 +38,25 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// ── Helper: handles both { user:{...} } and flat { id, first_name, ... } ─────
+
+function extractUser(data: Record<string, unknown>): User {
+  const u = (data.user as Record<string, unknown>) ?? data;
+  return {
+    id:           u.id            as number,
+    first_name:  (u.first_name   as string) || "",
+    last_name:   (u.last_name    as string) || "",
+    email:       (u.email        as string) || "",
+    role:       ((u.role         as string) || "client") as User["role"],
+    phone:       (u.phone        as string) || "",
+    company_name:(u.company_name as string) || "",
+  };
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser]       = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -80,24 +95,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || "Invalid email or password.");
     }
-
     const data = await res.json();
-    localStorage.setItem("access_token", data.access);
+    localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
-    setUser({
-      id: data.id,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      email: data.email,
-      role: data.role,
-      phone: data.phone || "",
-      company_name: data.company_name || "",
-    });
+    setUser(extractUser(data));
     router.push("/dashboard");
   };
 
@@ -107,35 +112,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
-
     if (!res.ok) {
       const err = await res.json();
       const message =
-        err.email?.[0] ||
+        err.error         ||
+        err.email?.[0]    ||
         err.password?.[0] ||
         err.first_name?.[0] ||
         "Registration failed. Please try again.";
       throw new Error(message);
     }
-
     const data = await res.json();
-    localStorage.setItem("access_token", data.access);
+    localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
-    setUser({
-      id: data.id,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      email: data.email,
-      role: data.role,
-      phone: data.phone || "",
-      company_name: data.company_name || "",
-    });
+    setUser(extractUser(data));
     router.push("/dashboard");
   };
 
   const logout = async () => {
     const refresh = localStorage.getItem("refresh_token");
-    const access = localStorage.getItem("access_token");
+    const access  = localStorage.getItem("access_token");
     try {
       await fetch(`${API}/api/auth/logout/`, {
         method: "POST",
@@ -169,9 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateProfile }}
-    >
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
