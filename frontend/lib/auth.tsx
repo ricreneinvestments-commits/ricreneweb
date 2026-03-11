@@ -26,7 +26,7 @@ export interface RegisterData {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
@@ -53,6 +53,12 @@ function extractUser(data: Record<string, unknown>): User {
   };
 }
 
+function clearStorage() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("token_expiry");
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -61,10 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
+    const token  = localStorage.getItem("access_token");
+    const expiry = localStorage.getItem("token_expiry");
+
+    if (token && expiry && Date.now() < parseInt(expiry)) {
       fetchMe(token);
     } else {
+      // Token missing or expired — clean up and don't attempt fetch
+      clearStorage();
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,18 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         setUser(await res.json());
       } else {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
+        clearStorage();
       }
     } catch {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
+      clearStorage();
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe = false) => {
     const res = await fetch(`${API}/api/auth/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,8 +108,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(err.error || "Invalid email or password.");
     }
     const data = await res.json();
+
     localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
+
+    // Remember Me: 30 days vs. 1 hour (matches JWT ACCESS_TOKEN_LIFETIME)
+    const expiry = rememberMe
+      ? Date.now() + 30 * 24 * 60 * 60 * 1000
+      : Date.now() + 60 * 60 * 1000;
+    localStorage.setItem("token_expiry", String(expiry));
+
     setUser(extractUser(data));
     router.push("/dashboard");
   };
@@ -115,9 +131,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) {
       const err = await res.json();
       const message =
-        err.error         ||
-        err.email?.[0]    ||
-        err.password?.[0] ||
+        err.error           ||
+        err.email?.[0]      ||
+        err.password?.[0]   ||
         err.first_name?.[0] ||
         "Registration failed. Please try again.";
       throw new Error(message);
@@ -125,6 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
+    // New registrations get a standard 1-hour session
+    localStorage.setItem("token_expiry", String(Date.now() + 60 * 60 * 1000));
     setUser(extractUser(data));
     router.push("/dashboard");
   };
@@ -142,10 +160,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ refresh }),
       });
     } catch {
-      // fail silently
+      // fail silently — we clear local state regardless
     }
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    clearStorage();
     setUser(null);
     router.push("/");
   };

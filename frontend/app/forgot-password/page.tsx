@@ -8,13 +8,24 @@ export default function ForgotPasswordPage() {
   const [sent, setSent]     = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    // Show success regardless — prevents email enumeration
-    // If you later add a backend endpoint, call it here
-    setTimeout(() => { setSent(true); setLoading(false); }, 1000);
-  };
+  e.preventDefault();
+  setLoading(true);
+  try {
+    await fetch(`${API}/api/auth/forgot-password/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    // intentionally silent — always show success to prevent email enumeration
+  } finally {
+    setSent(true);
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">

@@ -6,17 +6,18 @@ import { useAuth } from "@/lib/auth";
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [showPass, setShowPass] = useState(false);
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [showPass, setShowPass]   = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Invalid email or password. Please try again.");
     } finally { setLoading(false); }
@@ -42,7 +43,7 @@ export default function LoginPage() {
           </svg>
         </div>
 
-        {/* Logo — same height as navbar (h-[120px] container, image fills it) */}
+        {/* Logo */}
         <div className="relative z-10">
           <Link href="/" className="inline-block h-[120px] w-48">
             <img src="/images/Ricrene logo transparent.png" alt="Ricrene"
@@ -83,7 +84,7 @@ export default function LoginPage() {
       <div className="w-full lg:w-[55%] flex items-center justify-center px-6 py-12 lg:px-20">
         <div className="w-full max-w-[400px]">
 
-          {/* Mobile logo — same proportions */}
+          {/* Mobile logo */}
           <div className="lg:hidden mb-10 flex justify-start">
             <Link href="/" className="inline-block h-[80px] w-40">
               <img src="/images/Ricrene logo transparent.png" alt="Ricrene"
@@ -135,6 +136,17 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Remember Me */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 accent-red-600"
+              />
+              <span className="text-sm text-gray-600">Remember me for 30 days</span>
+            </label>
 
             <button type="submit" disabled={loading}
               className="w-full bg-red-600 text-white py-3.5 rounded-xl font-semibold hover:bg-red-700 active:bg-red-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm shadow-lg shadow-red-600/20 mt-2">

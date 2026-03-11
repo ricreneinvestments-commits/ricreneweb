@@ -149,7 +149,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API}/api/messages/`, {
         method: "POST", headers: authHeaders(),
-        body: JSON.stringify({ message: msgText }),
+        body: JSON.stringify({ body: msgText }),
       });
       if (res.ok) {
         setMsgStatus("Message sent! We'll get back to you soon.");
