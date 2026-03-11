@@ -81,21 +81,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchMe = async (token: string) => {
-    try {
-      const res = await fetch(`${API}/api/auth/me/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setUser(await res.json());
-      } else {
-        clearStorage();
-      }
-    } catch {
+  try {
+    const res = await fetch(`${API}/api/auth/me/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setUser(extractUser(data));  
+    } else {
       clearStorage();
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch {
+    clearStorage();
+  } finally {
+    setLoading(false);
+  }
+};
 
   const login = async (email: string, password: string, rememberMe = false) => {
     const res = await fetch(`${API}/api/auth/login/`, {
