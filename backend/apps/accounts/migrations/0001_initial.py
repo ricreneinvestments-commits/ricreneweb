@@ -75,4 +75,21 @@ class Migration(migrations.Migration):
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='profile', to=settings.AUTH_USER_MODEL)),
             ],
         ),
+        migrations.CreateModel(
+            name='Invoice',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('invoice_number', models.CharField(max_length=50, unique=True)),
+                ('project_name', models.CharField(blank=True, max_length=300)),
+                ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
+                ('status', models.CharField(choices=[('draft', 'Draft'), ('sent', 'Sent'), ('paid', 'Paid'), ('overdue', 'Overdue'), ('cancelled', 'Cancelled')], default='sent', max_length=20)),
+                ('issued_date', models.DateField(default=django.utils.timezone.now)),
+                ('due_date', models.DateField(blank=True, null=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invoices', to='accounts.client')),
+            ],
+            options={
+                'ordering': ['-issued_date'],
+            },
+        ),
     ]
