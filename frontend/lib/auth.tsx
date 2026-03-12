@@ -3,8 +3,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export interface User {
   id: number;
   first_name: string;
@@ -32,13 +30,8 @@ interface AuthContextType {
   updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
-// ── Context ───────────────────────────────────────────────────────────────────
-
 const AuthContext = createContext<AuthContextType | null>(null);
-
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-// ── Helper: handles both { user:{...} } and flat { id, first_name, ... } ─────
 
 function extractUser(data: Record<string, unknown>): User {
   const u = (data.user as Record<string, unknown>) ?? data;
@@ -59,7 +52,24 @@ function clearStorage() {
   localStorage.removeItem("token_expiry");
 }
 
-// ── Provider ──────────────────────────────────────────────────────────────────
+async function tryRefresh(): Promise<string | null> {
+  const refresh = localStorage.getItem("refresh_token");
+  if (!refresh) return null;
+  try {
+    const res = await fetch(`${API}/api/auth/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.access) return null;
+    localStorage.setItem("access_token", data.access);
+    return data.access;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]       = useState<User | null>(null);
@@ -67,36 +77,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token  = localStorage.getItem("access_token");
     const expiry = localStorage.getItem("token_expiry");
+    const token  = localStorage.getItem("access_token");
 
-    if (token && expiry && Date.now() < parseInt(expiry)) {
-      fetchMe(token);
-    } else {
-      // Token missing or expired — clean up and don't attempt fetch
+    if (!expiry || Date.now() > parseInt(expiry)) {
       clearStorage();
       setLoading(false);
+      return;
+    }
+
+    if (token) {
+      fetchMe(token);
+    } else {
+      tryRefresh().then(newToken => {
+        if (newToken) fetchMe(newToken);
+        else { clearStorage(); setLoading(false); }
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchMe = async (token: string) => {
-  try {
-    const res = await fetch(`${API}/api/auth/me/`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setUser(extractUser(data));  
-    } else {
+    try {
+      const res = await fetch(`${API}/api/auth/me/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(extractUser(data));
+      } else if (res.status === 401) {
+        const newToken = await tryRefresh();
+        if (newToken) {
+          const res2 = await fetch(`${API}/api/auth/me/`, {
+            headers: { Authorization: `Bearer ${newToken}` },
+          });
+          if (res2.ok) {
+            const data2 = await res2.json();
+            setUser(extractUser(data2));
+            return;
+          }
+        }
+        clearStorage();
+      } else {
+        clearStorage();
+      }
+    } catch {
       clearStorage();
+    } finally {
+      setLoading(false);
     }
-  } catch {
-    clearStorage();
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const login = async (email: string, password: string, rememberMe = false) => {
     const res = await fetch(`${API}/api/auth/login/`, {
@@ -109,16 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(err.error || "Invalid email or password.");
     }
     const data = await res.json();
-
     localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
-
-    // Remember Me: 30 days vs. 1 hour (matches JWT ACCESS_TOKEN_LIFETIME)
     const expiry = rememberMe
       ? Date.now() + 30 * 24 * 60 * 60 * 1000
       : Date.now() + 60 * 60 * 1000;
     localStorage.setItem("token_expiry", String(expiry));
-
     setUser(extractUser(data));
     router.push("/dashboard");
   };
@@ -142,7 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     localStorage.setItem("access_token",  data.access);
     localStorage.setItem("refresh_token", data.refresh);
-    // New registrations get a standard 1-hour session
     localStorage.setItem("token_expiry", String(Date.now() + 60 * 60 * 1000));
     setUser(extractUser(data));
     router.push("/dashboard");
@@ -154,15 +179,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await fetch(`${API}/api/auth/logout/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${access}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${access}` },
         body: JSON.stringify({ refresh }),
       });
-    } catch {
-      // fail silently — we clear local state regardless
-    }
+    } catch { /* fail silently */ }
     clearStorage();
     setUser(null);
     router.push("/");
@@ -172,10 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("access_token");
     const res = await fetch(`${API}/api/auth/me/`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to update profile.");
@@ -188,8 +205,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
