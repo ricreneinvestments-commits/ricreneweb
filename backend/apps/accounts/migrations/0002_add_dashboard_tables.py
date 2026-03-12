@@ -1,5 +1,4 @@
-# Only tables confirmed MISSING from Render's database:
-# accounts_message, accounts_payment, accounts_project
+# MISSING tables: accounts_passwordresettoken, accounts_payment, accounts_message
 
 import django.db.models.deletion
 from django.conf import settings
@@ -15,18 +14,15 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Message',
+            name='PasswordResetToken',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('body', models.TextField()),
-                ('direction', models.CharField(choices=[('client_to_admin', 'Client → Admin'), ('admin_to_client', 'Admin → Client')], default='client_to_admin', max_length=20)),
-                ('read', models.BooleanField(default=False)),
+                ('token', models.CharField(db_index=True, max_length=128, unique=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='messages', to=settings.AUTH_USER_MODEL)),
+                ('expires_at', models.DateTimeField()),
+                ('used', models.BooleanField(default=False)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reset_tokens', to=settings.AUTH_USER_MODEL)),
             ],
-            options={
-                'ordering': ['-created_at'],
-            },
         ),
         migrations.CreateModel(
             name='Payment',
@@ -40,27 +36,18 @@ class Migration(migrations.Migration):
                 ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='accounts.client')),
                 ('invoice', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='accounts.invoice')),
             ],
-            options={
-                'ordering': ['-created_at'],
-            },
+            options={'ordering': ['-created_at']},
         ),
         migrations.CreateModel(
-            name='Project',
+            name='Message',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=300)),
-                ('service', models.CharField(blank=True, max_length=200)),
-                ('description', models.TextField(blank=True)),
-                ('status', models.CharField(choices=[('inquiry', 'Inquiry'), ('proposal', 'Proposal Sent'), ('active', 'Active'), ('review', 'In Review'), ('completed', 'Completed'), ('on_hold', 'On Hold'), ('cancelled', 'Cancelled')], default='inquiry', max_length=30)),
-                ('amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
-                ('start_date', models.DateField(blank=True, null=True)),
-                ('end_date', models.DateField(blank=True, null=True)),
+                ('body', models.TextField()),
+                ('direction', models.CharField(choices=[('client_to_admin', 'Client → Admin'), ('admin_to_client', 'Admin → Client')], default='client_to_admin', max_length=20)),
+                ('read', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projects', to='accounts.client')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='messages', to=settings.AUTH_USER_MODEL)),
             ],
-            options={
-                'ordering': ['-created_at'],
-            },
+            options={'ordering': ['-created_at']},
         ),
     ]

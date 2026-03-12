@@ -1,5 +1,5 @@
-# Tables that already exist on Render's database
-# DO NOT change this file
+# All tables that ALREADY EXIST on Render's database
+# This migration will be FAKED - it will not touch the database
 
 import django.db.models.deletion
 import django.utils.timezone
@@ -27,10 +27,7 @@ class Migration(migrations.Migration):
                 ('message', models.TextField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
-            options={
-                'verbose_name_plural': 'Contact inquiries',
-                'ordering': ['-created_at'],
-            },
+            options={'verbose_name_plural': 'Contact inquiries', 'ordering': ['-created_at']},
         ),
         migrations.CreateModel(
             name='PaymentInquiry',
@@ -42,10 +39,7 @@ class Migration(migrations.Migration):
                 ('message', models.TextField(blank=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
-            options={
-                'verbose_name_plural': 'Payment inquiries',
-                'ordering': ['-created_at'],
-            },
+            options={'verbose_name_plural': 'Payment inquiries', 'ordering': ['-created_at']},
         ),
         migrations.CreateModel(
             name='Client',
@@ -54,17 +48,6 @@ class Migration(migrations.Migration):
                 ('company_name', models.CharField(blank=True, max_length=200)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='client', to=settings.AUTH_USER_MODEL)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='PasswordResetToken',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token', models.CharField(db_index=True, max_length=128, unique=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('expires_at', models.DateTimeField()),
-                ('used', models.BooleanField(default=False)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reset_tokens', to=settings.AUTH_USER_MODEL)),
             ],
         ),
         migrations.CreateModel(
@@ -88,8 +71,23 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='invoices', to='accounts.client')),
             ],
-            options={
-                'ordering': ['-issued_date'],
-            },
+            options={'ordering': ['-issued_date']},
+        ),
+        migrations.CreateModel(
+            name='Project',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=300)),
+                ('service', models.CharField(blank=True, max_length=200)),
+                ('description', models.TextField(blank=True)),
+                ('status', models.CharField(choices=[('inquiry', 'Inquiry'), ('proposal', 'Proposal Sent'), ('active', 'Active'), ('review', 'In Review'), ('completed', 'Completed'), ('on_hold', 'On Hold'), ('cancelled', 'Cancelled')], default='inquiry', max_length=30)),
+                ('amount', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('start_date', models.DateField(blank=True, null=True)),
+                ('end_date', models.DateField(blank=True, null=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projects', to='accounts.client')),
+            ],
+            options={'ordering': ['-created_at']},
         ),
     ]

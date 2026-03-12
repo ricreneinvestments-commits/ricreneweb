@@ -1,0 +1,5 @@
+[33m49cb54a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fresh migrations
+[33m16f54d8[m fix: fresh migrations from clean slate
+[33m3cddfe7[m dashboard changes
+[33m6667dcb[m back to old models.py
+[33me6d339b[m Fixed dashboard to match old values
