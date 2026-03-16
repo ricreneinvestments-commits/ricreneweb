@@ -607,7 +607,7 @@ export default function DigitalSolutionsPage() {
                   <span className="text-2xl shrink-0">⭐</span>
                   <div>
                     <p className="font-black text-gray-900">Premium Add-on</p>
-                    <p className="text-xs text-amber-700 font-bold">+TZS 50,000 flat fee on any tier</p>
+                    <p className="text-xs text-amber-700 font-bold">+TZS 150,000 flat fee on any tier</p>
                   </div>
                 </div>
                 <ul className="space-y-2">
