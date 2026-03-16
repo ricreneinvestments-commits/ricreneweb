@@ -162,8 +162,8 @@ const maintenancePlans = [
   {
     id: "basic-maint",
     name: "Basic Care",
-    monthlyPrice: 30000,
-    yearlyPrice: 300000,
+    monthlyPrice: 50000,
+    yearlyPrice: 500000,
     theme: "light",
     badge: null,
     responseTime: "48 hours",
@@ -183,8 +183,8 @@ const maintenancePlans = [
   {
     id: "business-maint",
     name: "Business Care",
-    monthlyPrice: 70000,
-    yearlyPrice: 720000,
+    monthlyPrice: 100000,
+    yearlyPrice: 1000000,
     badge: "Most Popular",
     theme: "red",
     responseTime: "24 hours",

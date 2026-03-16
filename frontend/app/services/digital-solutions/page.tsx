@@ -10,7 +10,7 @@ const PRICING_TIERS = [
   { min: 301, max: 500,  ratePerCard: 1500, label: "301 – 500 guests" },
   { min: 501, max: 1000, ratePerCard: 1000, label: "501 – 1,000 guests" },
 ];
-const PREMIUM_ADDON_FEE = 50000; // flat fee on top of per-card total
+const PREMIUM_ADDON_FEE = 150000; // flat fee on top of per-card total
 const MIN_GUESTS = 200;
 const MAX_STANDARD_GUESTS = 1000;
 

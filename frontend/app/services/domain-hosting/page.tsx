@@ -6,13 +6,13 @@ import { MobilePaymentModal } from "@/components/MobilePaymentModal";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const tlds = [
-  { ext: ".co.tz", price: 45000, badge: "Popular 🇹🇿", desc: "The Tanzanian standard" },
+  { ext: ".co.tz", price: 40000, badge: "Popular 🇹🇿", desc: "The Tanzanian standard" },
   { ext: ".tz", price: 60000, badge: "Official", desc: "Premium .tz domain" },
-  { ext: ".or.tz", price: 45000, badge: "NGOs", desc: "For organizations" },
-  { ext: ".ac.tz", price: 45000, badge: "Education", desc: "Academic institutions" },
-  { ext: ".com", price: 35000, badge: "Global", desc: "Most recognized worldwide" },
-  { ext: ".org", price: 38000, badge: "Non-profit", desc: "Organizations & NGOs" },
-  { ext: ".net", price: 38000, badge: "Tech", desc: "Networks & tech brands" },
+  { ext: ".or.tz", price: 40000, badge: "NGOs", desc: "For organizations" },
+  { ext: ".ac.tz", price: 40000, badge: "Education", desc: "Academic institutions" },
+  { ext: ".com", price: 40000, badge: "Global", desc: "Most recognized worldwide" },
+  { ext: ".org", price: 40000, badge: "Non-profit", desc: "Organizations & NGOs" },
+  { ext: ".net", price: 40000, badge: "Tech", desc: "Networks & tech brands" },
   { ext: ".info", price: 30000, badge: "Budget", desc: "Affordable global option" },
 ];
 
