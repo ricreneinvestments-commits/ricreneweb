@@ -145,7 +145,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API}/api/messages/`, {
         method: "POST", headers: authHeaders(),
-        body: JSON.stringify({ body: msgText }), // ← "body" matches the Message model field
+        body: JSON.stringify({ body: msgText }),
       });
       if (res.ok) {
         setMsgStatus("Message sent! We'll get back to you soon.");
@@ -210,29 +210,52 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-400 font-medium">Client Portal</p>
-            <h1 className="text-base font-bold text-gray-900">Welcome, {user.first_name} 👋</h1>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+
+          {/* Top row: back link + sign out */}
+          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Website
+            </Link>
+            <button
+              onClick={logout}
+              className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
+            >
+              Sign out
+            </button>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Bottom row: welcome + message us */}
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Client Portal</p>
+              <h1 className="text-base font-bold text-gray-900">Welcome, {user.first_name} 👋</h1>
+            </div>
             <button
               onClick={() => setActivePanel(activePanel === "message" ? null : "message")}
-              className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5"
+              className="inline-flex items-center gap-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-              Message Us
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <span>Message Us</span>
             </button>
-            <button onClick={logout} className="text-sm text-gray-400 hover:text-red-600 transition-colors">Sign out</button>
           </div>
+
         </div>
       </div>
 
       {/* Message Panel */}
       {activePanel === "message" && (
-        <div className="max-w-5xl mx-auto px-6 pt-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="font-bold text-gray-900 mb-4">Send us a message</h3>
             <form onSubmit={handleMessage} className="space-y-4">
@@ -255,7 +278,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
 
         {/* Overview */}
         <section>
