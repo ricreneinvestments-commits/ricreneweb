@@ -212,33 +212,16 @@ export default function DashboardPage() {
 
       {/* ── Header ── */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
 
-          {/* Top row: back link + sign out */}
-          <div className="flex items-center justify-between py-2 border-b border-gray-100">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Website
-            </Link>
-            <button
-              onClick={logout}
-              className="text-xs text-gray-400 hover:text-red-600 font-medium transition-colors"
-            >
-              Sign out
-            </button>
+          {/* Left: portal label + welcome */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium">Client Portal</p>
+            <h1 className="text-base font-bold text-gray-900">Welcome, {user.first_name} 👋</h1>
           </div>
 
-          {/* Bottom row: welcome + message us */}
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="text-xs text-gray-400 font-medium">Client Portal</p>
-              <h1 className="text-base font-bold text-gray-900">Welcome, {user.first_name} 👋</h1>
-            </div>
+          {/* Right: message us + back to website + sign out */}
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setActivePanel(activePanel === "message" ? null : "message")}
               className="inline-flex items-center gap-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium transition-colors"
@@ -246,7 +229,24 @@ export default function DashboardPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
-              <span>Message Us</span>
+              <span className="hidden sm:inline">Message Us</span>
+            </button>
+
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-red-200 hover:bg-red-50 transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Website</span>
+            </Link>
+
+            <button
+              onClick={logout}
+              className="text-xs text-gray-400 hover:text-red-600 font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:border-red-200 hover:bg-red-50 transition-all"
+            >
+              Sign out
             </button>
           </div>
 
