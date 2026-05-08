@@ -16,6 +16,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = [
     "api.ricreneinvestment.co.tz",
     "ricrene-backend.onrender.com",
+    "www.ricreneinvestment.co.tz",
     "localhost",
     "127.0.0.1",
 ]
@@ -129,8 +130,8 @@ SIMPLE_JWT = {
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
 CORS_ALLOWED_ORIGINS = [
-    "https://ricreneweb.vercel.app",
-    "https://ricrene.co.tz",
+    "https://www.ricreneinvestment.co.tz",
+    "https://ricreneweb.vercel.app",  # optional
     "http://localhost:3000",
 ]
 
@@ -174,7 +175,10 @@ NOTIFY_EMAIL        = os.getenv('NOTIFY_EMAIL') or os.getenv('EMAIL_HOST_USER')
 
 BREVO_API_KEY      = os.getenv('BREVO_API_KEY', '')
 BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'ricreneinvestments@gmail.com')
-FRONTEND_URL       = os.getenv('FRONTEND_URL', 'https://ricreneweb.vercel.app')
+FRONTEND_URL = os.getenv(
+    "FRONTEND_URL",
+    "https://www.ricreneinvestment.co.tz"
+)
 
 # ✅ Startup warnings — visible in Render logs if env vars are missing
 if not BREVO_API_KEY:
