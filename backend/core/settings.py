@@ -2,6 +2,7 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+import warnings
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,13 +19,12 @@ ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
 ]
-# ── Security Headers (production) ─────────────────────────────────────────────
 
 if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER       = True
-    SECURE_CONTENT_TYPE_NOSNIFF     = True
-    X_FRAME_OPTIONS                 = 'DENY'
-    SECURE_REFERRER_POLICY          = 'strict-origin-when-cross-origin'
+    SECURE_BROWSER_XSS_FILTER   = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS             = 'DENY'
+    SECURE_REFERRER_POLICY      = 'strict-origin-when-cross-origin'
 
 # ── Apps ──────────────────────────────────────────────────────────────────────
 
@@ -44,15 +44,15 @@ INSTALLED_APPS = [
 # ── Middleware ─────────────────────────────────────────────────────────────────
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",   # MUST be first
+    "corsheaders.middleware.CorsMiddleware",      # MUST be first
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ fixed: moved up after Security
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -86,9 +86,7 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': '6543',
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+        'OPTIONS': {'sslmode': 'require'},
         'CONN_MAX_AGE': 60,
     }
 }
@@ -116,8 +114,8 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '60/hour',
         'user': '300/hour',
-        'auth': '10/minute',      # used by login/register
-        'contact': '5/minute',    # used by contact form
+        'auth': '10/minute',
+        'contact': '5/minute',
     },
 }
 
@@ -132,7 +130,13 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = [
     "https://ricreneweb.vercel.app",
+    "https://ricrene.co.tz",
     "http://localhost:3000",
+]
+
+# ✅ KEY FIX: covers ALL Vercel preview URLs like ricreneweb-abc123-xyz.vercel.app
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://ricreneweb.*\.vercel\.app$",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
@@ -153,16 +157,30 @@ CORS_ALLOW_METHODS = [
     "PUT",
 ]
 
-# ── Email ─────────────────────────────────────────────────────────────────────
+# ── Email (Brevo SMTP) ────────────────────────────────────────────────────────
 
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-relay.brevo.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER    = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST          = 'smtp-relay.brevo.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL  = f'Ricrene <{os.getenv("EMAIL_HOST_USER")}>'
-NOTIFY_EMAIL        = os.getenv('NOTIFY_EMAIL')
+
+# ✅ Safe fallback: if NOTIFY_EMAIL missing, falls back to EMAIL_HOST_USER
+NOTIFY_EMAIL        = os.getenv('NOTIFY_EMAIL') or os.getenv('EMAIL_HOST_USER')
+
+# ── Brevo HTTP API ────────────────────────────────────────────────────────────
+
+BREVO_API_KEY      = os.getenv('BREVO_API_KEY', '')
+BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'ricreneinvestments@gmail.com')
+FRONTEND_URL       = os.getenv('FRONTEND_URL', 'https://ricreneweb.vercel.app')
+
+# ✅ Startup warnings — visible in Render logs if env vars are missing
+if not BREVO_API_KEY:
+    warnings.warn("BREVO_API_KEY is not set — emails will not be sent!", RuntimeWarning)
+if not NOTIFY_EMAIL:
+    warnings.warn("NOTIFY_EMAIL is not set — contact form notifications will fail!", RuntimeWarning)
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -181,21 +199,10 @@ LOGGING = {
             'formatter': 'verbose',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
+    'root': {'handlers': ['console'], 'level': 'INFO'},
     'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-        'apps': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
+        'django': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+        'apps':   {'handlers': ['console'], 'level': 'INFO',    'propagate': False},
     },
 }
 
@@ -215,9 +222,3 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # ── Default primary key ───────────────────────────────────────────────────────
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ── Brevo HTTP API (used by send_email_async in views.py) ─────────────────────
-
-BREVO_API_KEY      = os.getenv('BREVO_API_KEY', '')
-BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'ricreneinvestments@gmail.com')
-FRONTEND_URL       = os.getenv('FRONTEND_URL', 'https://ricrene-frontend.onrender.com')
