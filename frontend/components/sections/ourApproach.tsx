@@ -2,6 +2,10 @@
 
 import { useEffect, useRef } from "react";
 
+const BRAND = "#44B6E8";
+const BRAND_DARK = "#2A9FD4";
+const BRAND_PALE = "#EBF8FD";
+
 const approaches = [
   {
     id: 1,
@@ -73,37 +77,33 @@ export function OurApproach() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const cards = entry.target.querySelectorAll('.approach-card');
+            const cards = entry.target.querySelectorAll(".approach-card");
             cards.forEach((card, index) => {
-              setTimeout(() => {
-                card.classList.add('animate-in');
-              }, index * 100);
+              setTimeout(() => card.classList.add("animate-in"), index * 100);
             });
           }
         });
       },
       { threshold: 0.1 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
   return (
     <section id="why-us" ref={sectionRef} className="py-20 md:py-32 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Header */}
         <div className="text-center mb-16 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 rounded-full mb-4">
-            <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
+            style={{ backgroundColor: BRAND_PALE }}
+          >
+            <svg className="w-5 h-5" style={{ color: BRAND }} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm font-semibold text-red-700">Why Work With Us</span>
+            <span className="text-sm font-semibold" style={{ color: BRAND_DARK }}>Why Work With Us</span>
           </div>
-          
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
             Our Approach to Your Success
           </h2>
@@ -112,28 +112,28 @@ export function OurApproach() {
           </p>
         </div>
 
-        {/* Approach Cards Grid */}
+        {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {approaches.map((approach, index) => (
+          {approaches.map((approach) => (
             <div
               key={approach.id}
-              className="approach-card opacity-0 translate-y-8 transition-all duration-700 bg-white rounded-2xl p-8 border border-gray-200 hover:border-red-200 hover:shadow-xl group"
+              className="approach-card opacity-0 translate-y-8 transition-all duration-700 bg-white rounded-2xl p-8 border border-gray-200 hover:shadow-xl group"
+              style={{ }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = `${BRAND}60`)}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "")}
             >
-              {/* Icon */}
-              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div
+                className="w-16 h-16 rounded-xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform duration-300"
+                style={{ background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})` }}
+              >
                 {approach.icon}
               </div>
-
-              {/* Content */}
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                {approach.title}
-              </h3>
-              <p className="text-gray-600 leading-relaxed">
-                {approach.description}
-              </p>
-
-              {/* Decorative element */}
-              <div className="mt-6 h-1 w-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full group-hover:w-20 transition-all duration-300"></div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{approach.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{approach.description}</p>
+              <div
+                className="mt-6 h-1 w-12 rounded-full group-hover:w-20 transition-all duration-300"
+                style={{ background: `linear-gradient(90deg, ${BRAND}, ${BRAND_DARK})` }}
+              />
             </div>
           ))}
         </div>
@@ -145,11 +145,9 @@ export function OurApproach() {
           </p>
           <a
             href="#contact"
-            onClick={(e) => {
-              e.preventDefault();
-              document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-4 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transform hover:-translate-y-1"
+            onClick={(e) => { e.preventDefault(); document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" }); }}
+            className="inline-flex items-center gap-2 text-white px-8 py-4 rounded-xl font-semibold transition-all transform hover:-translate-y-1"
+            style={{ background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`, boxShadow: `0 10px 30px ${BRAND}40` }}
           >
             Let&apos;s Talk About Your Project
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,10 +158,7 @@ export function OurApproach() {
       </div>
 
       <style jsx>{`
-        .animate-in {
-          opacity: 1 !important;
-          transform: translateY(0) !important;
-        }
+        .animate-in { opacity: 1 !important; transform: translateY(0) !important; }
       `}</style>
     </section>
   );

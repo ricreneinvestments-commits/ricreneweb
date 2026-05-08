@@ -5,38 +5,46 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import type { User } from "@/lib/auth";
 
-// ── Static data ───────────────────────────────────────────────────────────────
+// ── Brand ─────────────────────────────────────────────────────────────────────
+const BRAND      = "#44B6E8";
+const BRAND_DARK = "#2A9FD4";
+const BRAND_PALE = "#EBF8FD";
 
-const serviceCategories = [
+// ── 5 main services — each links ONLY to its own page ────────────────────────
+const services = [
   {
-    name: "Web Solutions",
     icon: "🌐",
-    services: [
-      { title: "Website Design & Development", description: "Professional websites that drive results", href: "/services/web-development" },
-      { title: "Domain & Hosting Subscriptions", description: "Get a domain name and reliable hosting", href: "/services/domain-hosting" },
-      { title: "Website Maintenance & Support", description: "Keep your site running smoothly", href: "/services/website-maintenance" },
-    ],
+    name: "Website Design & Maintenance",
+    description: "Websites, hosting, emails & SEO",
+    href: "/services/website-design",
   },
   {
-    name: "Business Systems",
+    icon: "📸",
+    name: "Photography & Media",
+    description: "Photos, video, streaming & marketing",
+    href: "/services/photography-media",
+  },
+  {
+    icon: "🖨️",
+    name: "Printing Services",
+    description: "T-shirts, cards, banners & more",
+    href: "/services/printing-services",
+  },
+  {
     icon: "⚙️",
-    services: [
-      { title: "Business Automation & Systems", description: "Tailored software for your operations", href: "/services/custom-systems" },
-      { title: "Data Analytics & Insights", description: "Make informed business decisions", href: "/services/data-analysis" },
-      { title: "Custom Business Email Solutions", description: "Professional email infrastructure", href: "/services/corporate-email" },
-    ],
+    name: "Business Automation",
+    description: "POS, e-commerce & custom systems",
+    href: "/services/business-automation",
   },
   {
-    name: "Digital & Media",
-    icon: "🎨",
-    services: [
-      { title: "SEO & Digital Marketing", description: "Get found online and attract customers", href: "/services/seo-digital-marketing" },
-      { title: "Digital Invitations & Cards", description: "Modern event and networking solutions", href: "/services/digital-solutions" },
-      { title: "Video Production & Streaming", description: "Modern video solutions for your brand", href: "/services/video-production" },
-    ],
+    icon: "📊",
+    name: "Data Intelligence",
+    description: "Analytics, dashboards & databases",
+    href: "/services/data-intelligence",
   },
 ];
 
+// ── Dashboard dropdown links ──────────────────────────────────────────────────
 const dropdownLinks = [
   { href: "/dashboard",          label: "My Dashboard", icon: "M3 7h18M3 12h18M3 17h18" },
   { href: "/dashboard/payments", label: "Payments",     icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" },
@@ -44,17 +52,20 @@ const dropdownLinks = [
   { href: "/dashboard/profile",  label: "Profile",      icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
 ];
 
-// ── Standalone components (must be OUTSIDE Navbar to satisfy eslint) ──────────
-
+// ── UserAvatar ────────────────────────────────────────────────────────────────
 function UserAvatar({ firstName, lastName }: { firstName: string; lastName: string }) {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   return (
-    <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold select-none">
+    <div
+      className="w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-bold select-none"
+      style={{ backgroundColor: BRAND }}
+    >
       {initials}
     </div>
   );
 }
 
+// ── AuthButton ────────────────────────────────────────────────────────────────
 interface AuthButtonProps {
   user: User | null;
   loading: boolean;
@@ -67,19 +78,12 @@ interface AuthButtonProps {
 }
 
 function AuthButton({
-  user,
-  loading,
-  isUserMenuOpen,
-  userButtonRef,
-  userMenuRef,
-  onToggleUserMenu,
-  onCloseUserMenu,
-  onLogout,
+  user, loading, isUserMenuOpen,
+  userButtonRef, userMenuRef,
+  onToggleUserMenu, onCloseUserMenu, onLogout,
 }: AuthButtonProps) {
-  // Placeholder while restoring session — prevents layout shift
   if (loading) return <div className="w-16 h-8" />;
 
-  // Logged in — avatar + dropdown
   if (user) {
     return (
       <div className="relative">
@@ -101,24 +105,17 @@ function AuthButton({
         {isUserMenuOpen && (
           <div
             ref={userMenuRef}
-            className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200/60 overflow-hidden z-50 animate-in-fast"
+            className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200/60 overflow-hidden z-50 animate-fade-down"
           >
-            {/* User info header */}
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <p className="text-sm font-semibold text-gray-900">
-                {user.first_name} {user.last_name}
-              </p>
+              <p className="text-sm font-semibold text-gray-900">{user.first_name} {user.last_name}</p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
-
-            {/* Nav links */}
             <div className="py-1">
               {dropdownLinks.map(({ href, label, icon }) => (
                 <Link
-                  key={href}
-                  href={href}
-                  onClick={onCloseUserMenu}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  key={href} href={href} onClick={onCloseUserMenu}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-sky-50 hover:text-[#44B6E8]"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
@@ -127,12 +124,11 @@ function AuthButton({
                 </Link>
               ))}
             </div>
-
-            {/* Sign out */}
             <div className="border-t border-gray-100 py-1">
               <button
                 onClick={onLogout}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors hover:bg-sky-50 hover:text-[#44B6E8]"
+                style={{ color: BRAND }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -146,29 +142,104 @@ function AuthButton({
     );
   }
 
-  // Not logged in — simple Login link
   return (
     <Link
       href="/login"
-      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
+      className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-all"
+      onMouseEnter={e => (e.currentTarget.style.color = BRAND)}
+      onMouseLeave={e => (e.currentTarget.style.color = "")}
     >
       Login
     </Link>
   );
 }
 
+// ── Services Dropdown — 5 cards, each goes to its own page ───────────────────
+function ServicesDropdown({
+  dropdownRef,
+  onClose,
+}: {
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      ref={dropdownRef}
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[520px] bg-white rounded-2xl shadow-2xl border border-gray-200/60 overflow-hidden z-50 animate-slide-down"
+    >
+      {/* Header */}
+      <div className="px-5 pt-4 pb-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Our Services</p>
+      </div>
+
+      {/* 5 service cards */}
+      <div className="px-3 pb-3 grid grid-cols-1 gap-1">
+        {services.map((svc) => (
+          <Link
+            key={svc.href}
+            href={svc.href}
+            onClick={onClose}
+            className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all group"
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_PALE)}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = "")}
+          >
+            {/* Icon */}
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-colors"
+              style={{ backgroundColor: BRAND_PALE }}
+            >
+              {svc.icon}
+            </div>
+
+            {/* Text */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 group-hover:text-[#44B6E8] transition-colors">
+                {svc.name}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{svc.description}</p>
+            </div>
+
+            {/* Arrow */}
+            <svg
+              className="w-4 h-4 text-gray-300 group-hover:text-[#44B6E8] group-hover:translate-x-0.5 transition-all shrink-0"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        ))}
+      </div>
+
+      {/* Footer strip */}
+      <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <span className="text-xs text-gray-400">Not sure where to start?</span>
+        <a
+          href="#contact"
+          onClick={(e) => { e.preventDefault(); onClose(); document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" }); }}
+          className="text-xs font-semibold px-4 py-1.5 rounded-lg text-white transition-all"
+          style={{ backgroundColor: BRAND }}
+          onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
+          onMouseLeave={e => (e.currentTarget.style.backgroundColor = BRAND)}
+        >
+          Free consultation →
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ── Navbar ────────────────────────────────────────────────────────────────────
-
 export default function Navbar() {
-  const [isMobileOpen,   setIsMobileOpen]   = useState(false);
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [scrolled,       setScrolled]       = useState(false);
+  const [isMobileOpen,    setIsMobileOpen]    = useState(false);
+  const [isServicesOpen,  setIsServicesOpen]  = useState(false);
+  const [isUserMenuOpen,  setIsUserMenuOpen]  = useState(false);
+  const [scrolled,        setScrolled]        = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
 
-  const megaMenuRef       = useRef<HTMLDivElement>(null);
-  const servicesButtonRef = useRef<HTMLButtonElement>(null);
-  const userMenuRef       = useRef<HTMLDivElement>(null);
-  const userButtonRef     = useRef<HTMLButtonElement>(null);
+  const dropdownRef      = useRef<HTMLDivElement>(null);
+  const servicesBtnRef   = useRef<HTMLButtonElement>(null);
+  const userMenuRef      = useRef<HTMLDivElement>(null);
+  const userButtonRef    = useRef<HTMLButtonElement>(null);
 
   const { user, loading, logout } = useAuth();
 
@@ -179,35 +250,27 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close mega menu on outside click
+  // Close services dropdown on outside click
   useEffect(() => {
     const handler = (e: Event) => {
       const t = e.target as Node;
       if (
-        megaMenuRef.current &&
-        !megaMenuRef.current.contains(t) &&
-        servicesButtonRef.current &&
-        !servicesButtonRef.current.contains(t)
-      ) {
-        setIsMegaMenuOpen(false);
-      }
+        dropdownRef.current && !dropdownRef.current.contains(t) &&
+        servicesBtnRef.current && !servicesBtnRef.current.contains(t)
+      ) setIsServicesOpen(false);
     };
-    if (isMegaMenuOpen) document.addEventListener("mousedown", handler);
+    if (isServicesOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isMegaMenuOpen]);
+  }, [isServicesOpen]);
 
   // Close user menu on outside click
   useEffect(() => {
     const handler = (e: Event) => {
       const t = e.target as Node;
       if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(t) &&
-        userButtonRef.current &&
-        !userButtonRef.current.contains(t)
-      ) {
-        setIsUserMenuOpen(false);
-      }
+        userMenuRef.current && !userMenuRef.current.contains(t) &&
+        userButtonRef.current && !userButtonRef.current.contains(t)
+      ) setIsUserMenuOpen(false);
     };
     if (isUserMenuOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -218,7 +281,7 @@ export default function Navbar() {
       e.preventDefault();
       document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
       setIsMobileOpen(false);
-      setIsMegaMenuOpen(false);
+      setIsServicesOpen(false);
     }
   };
 
@@ -228,7 +291,7 @@ export default function Navbar() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
     setIsMobileOpen(false);
-    setIsMegaMenuOpen(false);
+    setIsServicesOpen(false);
   };
 
   const handleLogout = async () => {
@@ -236,6 +299,9 @@ export default function Navbar() {
     setIsMobileOpen(false);
     await logout();
   };
+
+  const navLinkClass =
+    "px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-all";
 
   return (
     <>
@@ -247,104 +313,80 @@ export default function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between items-center h-25">
+          <div className="flex justify-between items-center h-20">
 
             {/* Logo */}
-            <Link href="/" onClick={handleHomeClick} className="relative h-30 w-48 shrink-0 flex items-center">
+            <Link href="/" onClick={handleHomeClick} className="relative h-30 w-44 shrink-0 flex items-center">
               <img
-                src="/images/Ricrene logo transparent.png"
+                src="/images/logoBlue.png"
                 alt="Ricrene Investment"
                 className="h-full w-full object-contain object-left"
               />
             </Link>
 
-            {/* Desktop nav links */}
+            {/* Desktop nav */}
             <div className="hidden lg:flex items-center gap-1">
+
               <Link
                 href="/"
                 onClick={handleHomeClick}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
+                className={navLinkClass}
+                onMouseEnter={e => (e.currentTarget.style.color = BRAND)}
+                onMouseLeave={e => (e.currentTarget.style.color = "")}
               >
                 Home
               </Link>
 
-              {/* Services mega menu trigger */}
+              {/* Services trigger */}
               <div className="relative">
                 <button
-                  ref={servicesButtonRef}
-                  onClick={() => setIsMegaMenuOpen(!isMegaMenuOpen)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-1"
+                  ref={servicesBtnRef}
+                  onClick={() => setIsServicesOpen(!isServicesOpen)}
+                  className={`${navLinkClass} flex items-center gap-1`}
+                  style={isServicesOpen ? { color: BRAND } : {}}
                 >
                   Services
                   <svg
-                    className={`w-4 h-4 transition-transform ${isMegaMenuOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 transition-transform duration-200 ${isServicesOpen ? "rotate-180" : ""}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
-                {isMegaMenuOpen && (
-                  <div
-                    ref={megaMenuRef}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-screen max-w-5xl bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 overflow-hidden animate-in"
-                  >
-                    <div className="grid grid-cols-3 gap-0 p-6">
-                      {serviceCategories.map((category, idx) => (
-                        <div
-                          key={category.name}
-                          className={idx !== 0 ? "border-l border-gray-200/50 pl-6" : ""}
-                        >
-                          <div className="flex items-center gap-2 mb-4">
-                            <span className="text-xl">{category.icon}</span>
-                            <h3 className="font-semibold text-gray-900 text-sm">{category.name}</h3>
-                          </div>
-                          <ul className="space-y-1">
-                            {category.services.map((service) => (
-                              <li key={service.href}>
-                                <a
-                                  href={service.href}
-                                  onClick={() => setIsMegaMenuOpen(false)}
-                                  className="group block p-3 rounded-lg hover:bg-red-50 transition-all"
-                                >
-                                  <div className="font-medium text-gray-900 group-hover:text-red-600 transition-colors text-sm mb-1">
-                                    {service.title}
-                                  </div>
-                                  <div className="text-xs text-gray-500 leading-relaxed">
-                                    {service.description}
-                                  </div>
-                                </a>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {isServicesOpen && (
+                  <ServicesDropdown
+                    dropdownRef={dropdownRef}
+                    onClose={() => setIsServicesOpen(false)}
+                  />
                 )}
               </div>
 
               <a
                 href="#why-us"
                 onClick={(e) => smoothScroll(e, "#why-us")}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
+                className={navLinkClass}
+                onMouseEnter={e => (e.currentTarget.style.color = BRAND)}
+                onMouseLeave={e => (e.currentTarget.style.color = "")}
               >
                 Why Us
               </a>
+
               <a
                 href="#contact"
                 onClick={(e) => smoothScroll(e, "#contact")}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
+                className={navLinkClass}
+                onMouseEnter={e => (e.currentTarget.style.color = BRAND)}
+                onMouseLeave={e => (e.currentTarget.style.color = "")}
               >
                 Contact
               </a>
             </div>
 
-            {/* Right side: Login/Avatar + Get Started */}
+            {/* Right: auth + CTA */}
             <div className="hidden lg:flex items-center gap-2">
               <AuthButton
-                user={user}
-                loading={loading}
+                user={user} loading={loading}
                 isUserMenuOpen={isUserMenuOpen}
                 userButtonRef={userButtonRef}
                 userMenuRef={userMenuRef}
@@ -355,7 +397,10 @@ export default function Navbar() {
               <a
                 href="#contact"
                 onClick={(e) => smoothScroll(e, "#contact")}
-                className="px-5 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-all shadow-sm hover:shadow-md"
+                className="px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-all shadow-sm hover:shadow-md"
+                style={{ backgroundColor: BRAND }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = BRAND)}
               >
                 Get Started
               </a>
@@ -368,20 +413,19 @@ export default function Navbar() {
               aria-label="Toggle menu"
             >
               <svg className="w-6 h-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isMobileOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
+                {isMobileOpen
+                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                }
               </svg>
             </button>
           </div>
         </div>
 
-        {/* ── Mobile menu ─────────────────────────────────────────────────── */}
+        {/* ── Mobile menu ───────────────────────────────────────────────────── */}
         {isMobileOpen && (
           <div className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200/50">
-            <div className="px-6 py-6 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="px-4 py-5 space-y-1 max-h-[calc(100vh-5rem)] overflow-y-auto">
 
               {/* Auth header */}
               {!loading && (
@@ -389,9 +433,7 @@ export default function Navbar() {
                   <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl mb-3">
                     <UserAvatar firstName={user.first_name} lastName={user.last_name} />
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {user.first_name} {user.last_name}
-                      </p>
+                      <p className="text-sm font-semibold text-gray-900">{user.first_name} {user.last_name}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
@@ -399,84 +441,113 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setIsMobileOpen(false)}
-                    className="block px-4 py-3 text-red-600 font-semibold hover:bg-red-50 rounded-lg transition-all text-sm"
+                    className="block px-4 py-3 font-semibold hover:bg-gray-50 rounded-lg transition-all text-sm"
+                    style={{ color: BRAND }}
                   >
                     Login / Create Account
                   </Link>
                 )
               )}
 
+              {/* Home */}
               <Link
                 href="/"
                 onClick={handleHomeClick}
-                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-all text-sm"
               >
                 Home
               </Link>
 
-              {serviceCategories.map((category) => (
-                <div key={category.name} className="border-t border-gray-100 pt-3 mt-3">
-                  <div className="flex items-center gap-2 px-4 py-2 mb-2">
-                    <span className="text-lg">{category.icon}</span>
-                    <h3 className="font-semibold text-gray-900 text-sm">{category.name}</h3>
-                  </div>
-                  <ul className="space-y-1 ml-2">
-                    {category.services.map((service) => (
-                      <li key={service.href}>
-                        <a
-                          href={service.href}
-                          onClick={() => setIsMobileOpen(false)}
-                          className="block px-4 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+              {/* Services accordion */}
+              <div className="border-t border-gray-100 pt-2 mt-1">
+                <button
+                  onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left rounded-lg hover:bg-gray-50 transition-all"
+                >
+                  <span className="font-semibold text-gray-900 text-sm">Services</span>
+                  <svg
+                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${mobileServicesOpen ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {mobileServicesOpen && (
+                  <div className="mt-1 space-y-1 pb-2">
+                    {services.map((svc) => (
+                      <Link
+                        key={svc.href}
+                        href={svc.href}
+                        onClick={() => setIsMobileOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all group"
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_PALE)}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "")}
+                      >
+                        <div
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0"
+                          style={{ backgroundColor: BRAND_PALE }}
                         >
-                          {service.title}
-                        </a>
-                      </li>
+                          {svc.icon}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 group-hover:text-[#44B6E8] transition-colors">
+                            {svc.name}
+                          </p>
+                          <p className="text-xs text-gray-400">{svc.description}</p>
+                        </div>
+                      </Link>
                     ))}
-                  </ul>
-                </div>
-              ))}
+                  </div>
+                )}
+              </div>
 
               <a
                 href="#why-us"
                 onClick={(e) => { smoothScroll(e, "#why-us"); setIsMobileOpen(false); }}
-                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all border-t border-gray-100 mt-3 pt-3"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-all text-sm border-t border-gray-100 mt-1 pt-3"
               >
                 Why Us
               </a>
+
               <a
                 href="#contact"
                 onClick={(e) => { smoothScroll(e, "#contact"); setIsMobileOpen(false); }}
-                className="block px-4 py-3 text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg font-medium transition-all"
+                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-all text-sm"
               >
                 Contact
               </a>
 
               {/* Dashboard links when logged in */}
               {user && (
-                <div className="border-t border-gray-100 pt-3 mt-3 space-y-1">
+                <div className="border-t border-gray-100 pt-3 mt-2 space-y-1">
                   {dropdownLinks.map(({ href, label }) => (
                     <Link
-                      key={href}
-                      href={href}
+                      key={href} href={href}
                       onClick={() => setIsMobileOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-sky-50 hover:text-[#44B6E8] rounded-lg transition-all"
                     >
                       {label}
                     </Link>
                   ))}
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                    className="block w-full text-left px-4 py-2.5 text-sm rounded-lg transition-all hover:bg-sky-50"
+                    style={{ color: BRAND }}
                   >
                     Sign Out
                   </button>
                 </div>
               )}
 
+              {/* Mobile CTA */}
               <a
                 href="#contact"
                 onClick={(e) => { smoothScroll(e, "#contact"); setIsMobileOpen(false); }}
-                className="block w-full bg-red-600 text-white px-6 py-3 rounded-lg text-center font-medium hover:bg-red-700 transition-all mt-4"
+                className="block w-full text-white px-6 py-3 rounded-xl text-center font-semibold transition-all mt-3"
+                style={{ backgroundColor: BRAND }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = BRAND)}
               >
                 Get Started
               </a>
@@ -485,22 +556,22 @@ export default function Navbar() {
         )}
       </nav>
 
-      {scrolled && <div className="h-30" />}
+      {scrolled && <div className="h-20" />}
 
       <style jsx>{`
-        .animate-in {
-          animation: slideDown 0.2s ease-out;
+        .animate-slide-down {
+          animation: slideDown 0.18s ease-out;
         }
-        .animate-in-fast {
-          animation: fadeDown 0.15s ease-out;
+        .animate-fade-down {
+          animation: fadeDown 0.14s ease-out;
         }
         @keyframes slideDown {
-          from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
         }
         @keyframes fadeDown {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(-5px); }
+          to   { opacity: 1; transform: translateY(0);    }
         }
       `}</style>
     </>

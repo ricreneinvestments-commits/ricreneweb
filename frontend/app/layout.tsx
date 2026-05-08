@@ -17,10 +17,10 @@ const inter = Inter({
 
 const siteInfo = {
   name: "Ricrene Investment Ltd",
-  tagline: "Innovative IT Solutions for Business Growth",
+  tagline: "Innovative Digital Solutions for Business Growth",
   description:
-    "Leading IT solutions provider in Tanzania offering web development, custom business systems, data analytics, SEO, video production, and digital transformation services. Based in Dar es Salaam.",
-  url: "https://ricrene.co.tz",
+    "Leading digital solutions provider in Tanzania offering website design & maintenance, professional photography & media production, printing services, business automation systems, and data intelligence. Based in Dar es Salaam.",
+  url: "https://ricreneinvestment.co.tz",
 };
 
 // ── Local Business Structured Data (Google) ───────────────────────────────────
@@ -31,7 +31,7 @@ const structuredData = {
   "name": "Ricrene Investment Ltd",
   "description": siteInfo.description,
   "url": siteInfo.url,
-  "logo": `${siteInfo.url}/images/logo.png`,
+  "logo": `${siteInfo.url}/images/logoBlue.png`,
   "image": `${siteInfo.url}/images/og-image.jpg`,
   "telephone": "+255-674-114-407",
   "email": "ricreneinvestments@gmail.com",
@@ -54,15 +54,48 @@ const structuredData = {
   "sameAs": [],
   "hasOfferCatalog": {
     "@type": "OfferCatalog",
-    "name": "IT Services",
+    "name": "Digital Services",
     "itemListElement": [
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Website Design & Development" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Business Automation & Systems" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "SEO & Digital Marketing" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Data Analytics & Insights" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Video Production & Streaming" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Domain & Hosting Subscriptions" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Custom Business Email Solutions" } },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Website Design & Maintenance",
+          "description": "Professional website design, development, domain registration, web hosting, custom business emails, and SEO services."
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Photography & Media Production",
+          "description": "Professional photoshoots, events photography, live streaming, video production, digital marketing, and digital invitation cards."
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Printing Services",
+          "description": "Full-range printing solutions including T-shirts, cups, business cards, books, banners, brochures, and branded merchandise."
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Business Automation",
+          "description": "Custom business management systems including POS, e-commerce platforms, school management, hospital management, and financial systems."
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Data Intelligence",
+          "description": "Business intelligence, data analytics, dashboards, reporting systems, and data-driven decision support services."
+        }
+      }
     ]
   }
 };
@@ -72,23 +105,28 @@ const structuredData = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteInfo.url),
   title: {
-    default: `${siteInfo.name} | IT Solutions Tanzania`,
+    default: `${siteInfo.name} | Digital Solutions Tanzania`,
     template: `%s | ${siteInfo.name}`,
   },
   description: siteInfo.description,
   keywords: [
-    "IT solutions Tanzania",
-    "web development Tanzania",
-    "web development Dar es Salaam",
-    "custom software Tanzania",
-    "business systems Tanzania",
-    "digital transformation Tanzania",
-    "SEO services Tanzania",
-    "data analysis Tanzania",
-    "corporate email Tanzania",
-    "video production Dar es Salaam",
+    "digital solutions Tanzania",
     "website design Tanzania",
+    "web development Dar es Salaam",
+    "photography Tanzania",
+    "events photography Dar es Salaam",
+    "printing services Tanzania",
     "business automation Tanzania",
+    "custom software Tanzania",
+    "POS systems Tanzania",
+    "school management system Tanzania",
+    "data analytics Tanzania",
+    "business intelligence Tanzania",
+    "digital marketing Tanzania",
+    "live streaming Tanzania",
+    "video production Dar es Salaam",
+    "SEO services Tanzania",
+    "custom email Tanzania",
     "Ricrene Investment",
   ],
   authors: [{ name: siteInfo.name, url: siteInfo.url }],
@@ -102,20 +140,20 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteInfo.url,
     siteName: siteInfo.name,
-    title: `${siteInfo.name} | IT Solutions Tanzania`,
+    title: `${siteInfo.name} | Digital Solutions Tanzania`,
     description: siteInfo.description,
     images: [
       {
         url: "/images/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: `${siteInfo.name} — IT Solutions Tanzania`,
+        alt: `${siteInfo.name} — Digital Solutions Tanzania`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteInfo.name} | IT Solutions Tanzania`,
+    title: `${siteInfo.name} | Digital Solutions Tanzania`,
     description: siteInfo.description,
     images: ["/images/og-image.jpg"],
   },
@@ -131,7 +169,6 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Add your Google Search Console verification token here once domain is registered
     // google: "your-verification-token",
   },
 };
@@ -140,7 +177,7 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#DC2626",
+  themeColor: "#44B6E8",
 };
 
 // ── Layout ───────────────────────────────────────────────────────────────────
@@ -159,7 +196,6 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="geo.region" content="TZ" />
         <meta name="geo.placename" content="Dar es Salaam, Tanzania" />
-        {/* Local Business Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -175,4 +211,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-} 
+}

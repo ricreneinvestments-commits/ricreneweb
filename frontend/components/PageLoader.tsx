@@ -29,7 +29,7 @@ export default function PageLoader() {
           }}
         >
           <motion.img
-            src="/images/Ricrene logo transparent.png"
+            src="/images/logoBlue.png"
             alt="Ricrene"
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
@@ -37,7 +37,7 @@ export default function PageLoader() {
             onError={(e) => {
               const img = e.currentTarget;
               if (!img.src.includes("Ricrene_logo")) {
-                img.src = "/images/Ricrene_logo.jpeg";
+                img.src = "/images/logoBlue.png";
               }
             }}
           />

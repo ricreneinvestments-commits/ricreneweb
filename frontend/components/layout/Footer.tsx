@@ -1,6 +1,5 @@
 "use client";
 
-// Social media icon components
 const SocialIcons = {
   facebook: () => (
     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -19,7 +18,7 @@ const SocialIcons = {
   ),
   linkedin: () => (
     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 23.2 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
     </svg>
   ),
   youtube: () => (
@@ -29,55 +28,96 @@ const SocialIcons = {
   ),
 };
 
+// ── Brand color ───────────────────────────────────────────────────────────────
+const BRAND = "#44B6E8";
+const BRAND_PALE = "#EBF8FD";
+
 const navigationContent = {
   social: [
-    { platform: "facebook", href: "https://facebook.com/ricrene", label: "Facebook" },
-    { platform: "instagram", href: "https://www.instagram.com/ricrene_tech/", label: "Instagram" },
-    { platform: "twitter", href: "https://twitter.com/ricrene", label: "Twitter" },
-    { platform: "linkedin", href: "https://linkedin.com/company/ricrene", label: "LinkedIn" },
-    { platform: "youtube", href: "https://youtube.com/@ricrene", label: "YouTube" },
+    { platform: "facebook",  href: "https://facebook.com/ricrene",              label: "Facebook"  },
+    { platform: "instagram", href: "https://www.instagram.com/ricrene_tech/",   label: "Instagram" },
+    { platform: "twitter",   href: "https://twitter.com/ricrene",               label: "Twitter"   },
+    { platform: "linkedin",  href: "https://linkedin.com/company/ricrene",      label: "LinkedIn"  },
+    { platform: "youtube",   href: "https://youtube.com/@ricrene",              label: "YouTube"   },
   ],
   footer: {
     services: {
-      title: "Services",
-      links: [
-        { label: "Website Design & Development", href: "/services/web-development" },
-        { label: "Domain & Hosting Subscriptions", href: "/services/domain-hosting" },
-        { label: "Website Maintenance & Support", href: "/services/website-maintenance" },
-        { label: "SEO & Digital Marketing", href: "/services/seo-digital-marketing" },
-        { label: "Business Automation & Systems", href: "/services/custom-systems" },
-        { label: "Corporate Email Solutions", href: "/services/corporate-email" },
-        { label: "Data Analytics & Insights", href: "/services/data-analysis" },
-        { label: "Digital Solutions", href: "/services/digital-solutions" },
-        { label: "Video Production & Streaming", href: "/services/video-production" },
+      title: "Our Services",
+      groups: [
+        {
+          heading: "Website & Online",
+          links: [
+            { label: "Website Design & Development", href: "/services/website-design" },
+            { label: "Domain & Hosting",             href: "/services/domain-hosting" },
+            { label: "Custom Business Emails",       href: "/services/business-email" },
+            { label: "SEO Optimization",             href: "/services/seo" },
+            { label: "Website Maintenance",          href: "/services/website-maintenance" },
+          ],
+        },
+        {
+          heading: "Photography & Media",
+          links: [
+            { label: "Professional Photoshoots",     href: "/services/photoshoots" },
+            { label: "Events Photography",           href: "/services/events-photography" },
+            { label: "Live Streaming",               href: "/services/live-streaming" },
+            { label: "Video Production",             href: "/services/video-production" },
+            { label: "Digital Marketing",            href: "/services/digital-marketing" },
+            { label: "Digital Invitation Cards",     href: "/services/digital-invitations" },
+          ],
+        },
+        {
+          heading: "Printing Services",
+          links: [
+            { label: "Branded Merchandise",          href: "/services/branded-merchandise" },
+            { label: "Business Cards & Stationery",  href: "/services/business-cards" },
+            { label: "Large Format Printing",        href: "/services/large-format" },
+            { label: "Books & Publications",         href: "/services/publications" },
+            { label: "Promotional Materials",        href: "/services/promotional" },
+          ],
+        },
+        {
+          heading: "Business Automation",
+          links: [
+            { label: "POS Systems",                  href: "/services/pos-systems" },
+            { label: "E-Commerce Platforms",         href: "/services/ecommerce" },
+            { label: "School Management Systems",    href: "/services/school-management" },
+            { label: "Hospital & Clinic Systems",    href: "/services/hospital-management" },
+            { label: "Financial & Accounting",       href: "/services/financial-systems" },
+          ],
+        },
+        {
+          heading: "Data Intelligence",
+          links: [
+            { label: "BI Dashboards",                href: "/services/bi-dashboards" },
+            { label: "Data Analytics",               href: "/services/data-analytics" },
+            { label: "Database Management",          href: "/services/database-management" },
+            { label: "Data Integration",             href: "/services/data-integration" },
+          ],
+        },
       ],
     },
     quickLinks: {
       title: "Quick Links",
       links: [
-        { label: "Home", href: "/" },
-        { label: "Services", href: "/#services" },
-        { label: "Why Choose Us", href: "/#why-us" },
-        { label: "Our Process", href: "/#process" },
-        { label: "Contact Us", href: "/#contact" },
+        { label: "Home",           href: "/"          },
+        { label: "Services",       href: "/#services" },
+        { label: "Why Choose Us",  href: "/#why-us"   },
+        { label: "Our Process",    href: "/#process"  },
+        { label: "Contact Us",     href: "/#contact"  },
       ],
     },
   },
   contact: {
     email: "ricreneinvestments@gmail.com",
-    phones: [
-      "+255 674 114 407",
-      "+255 784 075 702"
-    ],
+    phones: ["+255 674 114 407", "+255 784 075 702"],
     address: "Samora Tower, Dar es Salaam, Tanzania",
-},
+  },
 };
 
 const siteContent = {
   company: {
     name: "Ricrene Investment Ltd",
-    tagline: "Innovative IT Solutions for Business Growth",
-    foundedYear: "2020",
+    tagline: "Innovative Digital Solutions for Business Growth",
   },
 };
 
@@ -86,34 +126,37 @@ export function Footer() {
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 text-gray-300 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl"></div>
+      {/* Decorative blobs — now brand-colored */}
+      <div className="absolute top-0 left-0 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${BRAND}0D` }}></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${BRAND}0D` }}></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mb-12">
-          {/* Company Info - Spans 4 columns */}
-          <div className="lg:col-span-4">
+
+        {/* ── Top Section ─────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-12">
+
+          {/* Company info */}
+          <div className="lg:col-span-3">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, ${BRAND}, #2A9FD4)` }}
+              >
                 <span className="text-white font-bold text-lg">R</span>
               </div>
-              <h3 className="text-white text-xl font-bold">
-                {siteContent.company.name}
-              </h3>
+              <h3 className="text-white text-xl font-bold">{siteContent.company.name}</h3>
             </div>
-            <p className="text-gray-400 mb-6 leading-relaxed">
+            <p className="text-gray-400 mb-4 leading-relaxed text-sm">
               {siteContent.company.tagline}
             </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Building innovative technology solutions for businesses across Tanzania and East Africa. 
-              We are dedicated to empowering local enterprises with the digital tools necessary to scale operations and compete in a rapidly evolving global marketplace.
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              Building innovative digital solutions for businesses across Tanzania and East Africa.
+              We empower local enterprises with the tools to scale and compete in the modern marketplace.
             </p>
 
-            {/* Social Media Links */}
+            {/* Social */}
             <div>
-              <h4 className="text-white font-semibold mb-4">Follow Us</h4>
+              <h4 className="text-white font-semibold mb-4 text-sm">Follow Us</h4>
               <div className="flex gap-3">
                 {navigationContent.social.map((social) => {
                   const Icon = SocialIcons[social.platform as keyof typeof SocialIcons];
@@ -123,7 +166,16 @@ export function Footer() {
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 bg-white/5 hover:bg-red-600 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-all hover:scale-110"
+                      className="w-9 h-9 bg-white/5 rounded-lg flex items-center justify-center text-gray-400 transition-all hover:scale-110"
+                      style={{ }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                        (e.currentTarget as HTMLElement).style.color = "white";
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = "";
+                        (e.currentTarget as HTMLElement).style.color = "";
+                      }}
                       aria-label={social.label}
                     >
                       {Icon && <Icon />}
@@ -134,124 +186,124 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Services Links - Spans 3 columns */}
-          <div className="lg:col-span-3">
-            <h4 className="text-white font-semibold mb-6 text-lg">
-              {navigationContent.footer.services.title}
-            </h4>
-            <ul className="space-y-3">
-              {navigationContent.footer.services.links.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-2 group"
-                  >
-                    <svg className="w-4 h-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Quick Links - Spans 2 columns */}
-          <div className="lg:col-span-2">
-            <h4 className="text-white font-semibold mb-6 text-lg">
-              {navigationContent.footer.quickLinks.title}
-            </h4>
-            <ul className="space-y-3">
-              {navigationContent.footer.quickLinks.links.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    onClick={(e) => {
-                      if (link.href.startsWith('/#')) {
-                        e.preventDefault();
-                        const id = link.href.substring(2);
-                        const element = document.getElementById(id);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth' });
-                        }
-                      }
-                    }}
-                    className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-2 group"
-                  >
-                    <svg className="w-4 h-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact Info - Spans 3 columns */}
-          <div className="lg:col-span-3">
-            <h4 className="text-white font-semibold mb-6 text-lg">Get In Touch</h4>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <a href={`mailto:${navigationContent.contact.email}`} className="text-gray-400 hover:text-white transition-colors text-sm">
-                  {navigationContent.contact.email}
-                </a>
-              </li>
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-500 shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-
-                <div className="flex flex-col">
-                  {navigationContent.contact.phones.map((phone, index) => (
-                    <a
-                      key={index}
-                      href={`tel:${phone.replace(/\s/g, "")}`}
-                      className="text-gray-400 hover:text-white transition-colors text-sm"
-                    >
-                      {phone}
-                    </a>
-                  ))}
+          {/* Services columns — 2 per column for desktop */}
+          <div className="lg:col-span-6">
+            <h4 className="text-white font-semibold mb-6 text-sm">Our Services</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              {navigationContent.footer.services.groups.map((group) => (
+                <div key={group.heading}>
+                  <h5 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: BRAND }}>
+                    {group.heading}
+                  </h5>
+                  <ul className="space-y-2">
+                    {group.links.map((link) => (
+                      <li key={link.href}>
+                        <a
+                          href={link.href}
+                          className="text-gray-400 hover:text-white transition-colors text-xs"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-gray-400 text-sm">
-                  {navigationContent.contact.address}
-                </span>
-              </li>
-            </ul>
+              ))}
+            </div>
+          </div>
 
-            {/* CTA */}
-            <div className="mt-6">
-              <a
-                href="#contact"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-3 rounded-lg text-sm font-semibold hover:from-red-700 hover:to-red-800 transition-all"
-              >
-                Get Free Consultation
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </a>
+          {/* Contact + Quick Links */}
+          <div className="lg:col-span-3 space-y-8">
+            {/* Quick links */}
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-sm">{navigationContent.footer.quickLinks.title}</h4>
+              <ul className="space-y-2">
+                {navigationContent.footer.quickLinks.links.map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      onClick={(e) => {
+                        if (link.href.startsWith("/#")) {
+                          e.preventDefault();
+                          const id = link.href.substring(2);
+                          document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+                        }
+                      }}
+                      className="text-gray-400 hover:text-white transition-colors text-xs flex items-center gap-2 group"
+                    >
+                      <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: BRAND }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-sm">Get In Touch</h4>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <svg className="w-4 h-4 shrink-0 mt-0.5" style={{ color: BRAND }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <a href={`mailto:${navigationContent.contact.email}`} className="text-gray-400 hover:text-white transition-colors text-xs">
+                    {navigationContent.contact.email}
+                  </a>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-4 h-4 shrink-0 mt-0.5" style={{ color: BRAND }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <div className="flex flex-col gap-1">
+                    {navigationContent.contact.phones.map((phone, index) => (
+                      <a key={index} href={`tel:${phone.replace(/\s/g, "")}`} className="text-gray-400 hover:text-white transition-colors text-xs">
+                        {phone}
+                      </a>
+                    ))}
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-4 h-4 shrink-0 mt-0.5" style={{ color: BRAND }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span className="text-gray-400 text-xs">{navigationContent.contact.address}</span>
+                </li>
+              </ul>
+
+              <div className="mt-5">
+                <a
+                  href="#contact"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{ background: `linear-gradient(135deg, ${BRAND}, #2A9FD4)` }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = "0.9")}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+                >
+                  Get Free Consultation
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Bar */}
+        {/* ── Bottom Bar ───────────────────────────────────────────────────── */}
         <div className="pt-8 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500 text-center md:text-left">
+            <p className="text-xs text-gray-500 text-center md:text-left">
               © {currentYear} {siteContent.company.name}. All rights reserved. Built with excellence in Tanzania.
+            </p>
+            <p className="text-xs text-gray-600">
+              ricreneinvestment.co.tz
             </p>
           </div>
         </div>
