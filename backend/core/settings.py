@@ -12,11 +12,12 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-dev-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv(
-    'ALLOWED_HOSTS',
-    'ricrene-backend.onrender.com,localhost,127.0.0.1'
-).split(',')
-
+ALLOWED_HOSTS = [
+    "api.ricreneinvestment.co.tz",
+    "ricrene-backend.onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
 # ── Security Headers (production) ─────────────────────────────────────────────
 
 if not DEBUG:
@@ -130,7 +131,7 @@ SIMPLE_JWT = {
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
 CORS_ALLOWED_ORIGINS = [
-    "https://ricrene-frontend.onrender.com",
+    "https://ricreneweb.vercel.app",
     "http://localhost:3000",
 ]
 
