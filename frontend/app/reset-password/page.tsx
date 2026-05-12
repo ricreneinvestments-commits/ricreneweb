@@ -39,8 +39,8 @@ function ResetForm() {
 
   if (!token || !uid) return (
     <div className="text-center">
-      <p className="text-red-600 text-sm mb-4">Invalid reset link.</p>
-      <Link href="/forgot-password" className="text-red-600 font-medium hover:underline">Request a new one →</Link>
+      <p className="text-[#44B6E8] text-sm mb-4">Invalid reset link.</p>
+      <Link href="/forgot-password" className="text-[#44B6E8] font-medium hover:underline">Request a new one →</Link>
     </div>
   );
 
@@ -67,17 +67,20 @@ function ResetForm() {
           <label className="block text-sm font-semibold text-gray-700 mb-2">New password</label>
           <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition-all" />
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#44B6E8] focus:bg-white transition-all" />
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm password</label>
           <input type="password" required value={confirm} onChange={e => setConfirm(e.target.value)}
             placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition-all" />
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#44B6E8] focus:bg-white transition-all" />
         </div>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button type="submit" disabled={loading}
-          className="w-full bg-red-600 text-white py-3.5 rounded-xl font-semibold hover:bg-red-700 disabled:opacity-60 transition-all text-sm shadow-lg shadow-red-600/20">
+        {error && <p className="text-[#44B6E8] text-sm">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#44B6E8] text-white py-3.5 rounded-xl font-semibold hover:bg-[#2A9FD4] disabled:opacity-60 transition-all text-sm shadow-lg shadow-[#44B6E8]/20"
+        >
           {loading ? "Updating..." : "Update password"}
         </button>
       </form>
