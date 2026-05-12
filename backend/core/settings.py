@@ -14,9 +14,15 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-dev-key-change-in-production')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
-    "api.ricreneinvestment.co.tz",
-    "ricrene-backend.onrender.com",
+    # Production
+    "ricreneinvestment.co.tz",
     "www.ricreneinvestment.co.tz",
+    "api.ricreneinvestment.co.tz",
+    # Render backend
+    "ricrene-backend.onrender.com",
+    # Vercel — the leading dot covers ALL subdomains: abc.vercel.app, xyz-abc.vercel.app, etc.
+    ".vercel.app",
+    # Local dev
     "localhost",
     "127.0.0.1",
 ]
@@ -42,12 +48,12 @@ INSTALLED_APPS = [
     'apps.accounts',
 ]
 
-# ── Middleware ─────────────────────────────────────────────────────────────────
+# ── Middleware ────────────────────────────────────────────────────────────────
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",      # MUST be first
+    "corsheaders.middleware.CorsMiddleware",       # MUST be first
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ fixed: moved up after Security
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -121,34 +127,46 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
-    'ROTATE_REFRESH_TOKENS':  True,
+    'ACCESS_TOKEN_LIFETIME':    timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME':   timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS':    True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
 CORS_ALLOWED_ORIGINS = [
+    "https://ricreneinvestment.co.tz",
     "https://www.ricreneinvestment.co.tz",
-    "https://ricreneweb.vercel.app",  # optional
+    "https://ricreneweb.vercel.app",
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
-# ✅ KEY FIX: covers ALL Vercel preview URLs like ricreneweb-abc123-xyz.vercel.app
+# Covers every possible Vercel preview URL pattern:
+#   ricreneweb-abc123-xyz.vercel.app
+#   ricreneweb-ejaeyn8ix-ricreneinvestments-commits-projects.vercel.app
+#   ricreneweb-git-main-ricreneinvestments-commits-projects.vercel.app
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://ricreneweb.*\.vercel\.app$",
+    r"^https://ricreneweb[a-zA-Z0-9\-]*\.vercel\.app$",
+    r"^https://[a-zA-Z0-9\-]+-ricreneinvestments-commits-projects\.vercel\.app$",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS  = False
+CORS_ALLOW_CREDENTIALS  = True
+
 CORS_ALLOW_HEADERS = [
     "accept",
+    "accept-encoding",
     "authorization",
     "content-type",
+    "dnt",
     "origin",
+    "user-agent",
+    "x-csrftoken",
     "x-requested-with",
 ]
+
 CORS_ALLOW_METHODS = [
     "DELETE",
     "GET",
@@ -156,6 +174,16 @@ CORS_ALLOW_METHODS = [
     "PATCH",
     "POST",
     "PUT",
+]
+
+# ── CSRF trusted origins ──────────────────────────────────────────────────────
+# Needed so Django doesn't reject requests from these domains.
+# DRF+JWT is CSRF-exempt but Django admin and session views still need this.
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://ricreneinvestment.co.tz",
+    "https://www.ricreneinvestment.co.tz",
+    "https://ricreneweb.vercel.app",
 ]
 
 # ── Email (Brevo SMTP) ────────────────────────────────────────────────────────
@@ -168,19 +196,14 @@ EMAIL_HOST_USER     = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL  = f'Ricrene <{os.getenv("EMAIL_HOST_USER")}>'
 
-# ✅ Safe fallback: if NOTIFY_EMAIL missing, falls back to EMAIL_HOST_USER
-NOTIFY_EMAIL        = os.getenv('NOTIFY_EMAIL') or os.getenv('EMAIL_HOST_USER')
+NOTIFY_EMAIL = os.getenv('NOTIFY_EMAIL') or os.getenv('EMAIL_HOST_USER')
 
 # ── Brevo HTTP API ────────────────────────────────────────────────────────────
 
 BREVO_API_KEY      = os.getenv('BREVO_API_KEY', '')
 BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'ricreneinvestments@gmail.com')
-FRONTEND_URL = os.getenv(
-    "FRONTEND_URL",
-    "https://www.ricreneinvestment.co.tz"
-)
+FRONTEND_URL       = os.getenv('FRONTEND_URL', 'https://www.ricreneinvestment.co.tz')
 
-# ✅ Startup warnings — visible in Render logs if env vars are missing
 if not BREVO_API_KEY:
     warnings.warn("BREVO_API_KEY is not set — emails will not be sent!", RuntimeWarning)
 if not NOTIFY_EMAIL:
