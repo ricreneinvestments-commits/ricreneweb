@@ -1,4 +1,4 @@
-# backend/core/urls.py
+"""
 from django.contrib import admin
 from django.urls import path
 from django.http import HttpResponse
@@ -32,3 +32,4 @@ urlpatterns = [
     path('api/payments/',             views.payments_list,    name='payments-list'),
     path('api/messages/',             views.messages,         name='messages'),
 ]
+"""

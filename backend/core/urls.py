@@ -1,7 +1,6 @@
-
 # backend/core/urls.py
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path
 from django.http import HttpResponse
 
 from apps.accounts import views
@@ -11,7 +10,6 @@ urlpatterns = [
     path('', lambda request: HttpResponse("Backend is running 🚀")),
 
     path('admin/', admin.site.urls),
-    path('api/', include('apps.accounts.urls')),
 
     # ── Auth ──────────────────────────────────────────────────────────────
     path('api/auth/register/',        views.register,         name='register'),
