@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
-// ── Brand colors ──────────────────────────────────────────────────────────────
-const BRAND = "#44B6E8";
+const BRAND      = "#44B6E8";
 const BRAND_DARK = "#2A9FD4";
 const BRAND_PALE = "#EBF8FD";
 const BRAND_LIGHT = "#D6F0FB";
-
-// ── Service definitions ───────────────────────────────────────────────────────
 
 const services = [
   {
@@ -19,15 +17,15 @@ const services = [
     description:
       "We build fast, beautiful websites that represent your brand professionally. From first-time domain registration through to ongoing maintenance, we handle every layer of your online presence.",
     subServices: [
-      { name: "Website Design & Development", desc: "Custom websites built to convert visitors into customers" },
-      { name: "Domain Registration",           desc: "Secure the perfect domain name for your brand"             },
-      { name: "Web Hosting",                   desc: "Reliable, fast hosting with 99.9% uptime guarantee"        },
-      { name: "Custom Business Emails",        desc: "Professional email addresses that match your domain"       },
-      { name: "SEO Optimization",              desc: "Rank higher on Google and attract organic traffic"         },
-      { name: "Website Maintenance & Support", desc: "Security updates, backups, and ongoing improvements"       },
+      { name: "Website Design & Development",  desc: "Custom websites built to convert visitors into customers"    },
+      { name: "Domain Registration",           desc: "Secure the perfect domain name for your brand"               },
+      { name: "Web Hosting",                   desc: "Reliable, fast hosting with 99.9% uptime guarantee"          },
+      { name: "Custom Business Emails",        desc: "Professional email addresses that match your domain"         },
+      { name: "SEO Optimization",              desc: "Rank higher on Google and attract organic traffic"           },
+      { name: "Website Maintenance & Support", desc: "Security updates, backups, and ongoing improvements"         },
     ],
-    cta: { label: "Explore Web Solutions", href: "/services/website-design" },
-    stat: { value: "500+", label: "Sites Delivered" },
+    cta: { label: "Explore Web Solutions",    href: "/services/website-design"     },
+    stat: { value: "500+",   label: "Sites Delivered"   },
   },
   {
     id: "photo",
@@ -37,15 +35,15 @@ const services = [
     description:
       "From boardroom headshots to live-streamed concerts, our media team covers every visual need your brand has. We combine technical excellence with creative storytelling to produce content that resonates.",
     subServices: [
-      { name: "Professional Photoshoots",      desc: "Corporate, product, and lifestyle photography"            },
-      { name: "Events Photography Coverage",   desc: "Full event documentation from arrival to closing ceremony" },
-      { name: "Live Streaming",                desc: "Broadcast your events to global audiences in real time"    },
-      { name: "Video Production",              desc: "Promotional videos, documentaries, and brand films"        },
-      { name: "Digital Marketing",             desc: "Targeted campaigns that convert attention into revenue"     },
-      { name: "Digital Invitation Cards",      desc: "Elegant digital invitations for weddings, corporate events & more" },
+      { name: "Professional Photoshoots",    desc: "Corporate, product, and lifestyle photography"             },
+      { name: "Events Photography Coverage", desc: "Full event documentation from arrival to closing ceremony"  },
+      { name: "Live Streaming",              desc: "Broadcast your events to global audiences in real time"     },
+      { name: "Video Production",            desc: "Promotional videos, documentaries, and brand films"         },
+      { name: "Digital Marketing",           desc: "Targeted campaigns that convert attention into revenue"      },
+      { name: "Digital Invitation Cards",    desc: "Elegant digital invitations for any occasion"               },
     ],
-    cta: { label: "Explore Media Services", href: "/services/photoshoots" },
-    stat: { value: "1,200+", label: "Events Covered" },
+    cta: { label: "Explore Media Services",   href: "/services/photography-media"  },
+    stat: { value: "1,200+", label: "Events Covered"    },
   },
   {
     id: "print",
@@ -55,15 +53,15 @@ const services = [
     description:
       "Our full-range printing facility handles everything from branded T-shirts and coffee cups to company books and billboard banners. High-quality output, fast turnaround, competitive pricing.",
     subServices: [
-      { name: "Branded Merchandise",           desc: "T-shirts, caps, mugs, tote bags, and more"                },
-      { name: "Business Cards & Stationery",   desc: "Premium cards, letterheads, and office materials"         },
-      { name: "Large Format Printing",         desc: "Banners, roll-ups, posters, and outdoor signage"           },
-      { name: "Books & Publications",          desc: "Magazines, company reports, catalogues, and manuals"       },
-      { name: "Promotional Materials",         desc: "Brochures, flyers, leaflets, and event collateral"         },
-      { name: "Custom Packaging & Labels",     desc: "Branded packaging solutions for products"                  },
+      { name: "Branded Merchandise",         desc: "T-shirts, caps, mugs, tote bags, and more"           },
+      { name: "Business Cards & Stationery", desc: "Premium cards, letterheads, and office materials"     },
+      { name: "Large Format Printing",       desc: "Banners, roll-ups, posters, and outdoor signage"      },
+      { name: "Books & Publications",        desc: "Magazines, company reports, catalogues, and manuals"  },
+      { name: "Promotional Materials",       desc: "Brochures, flyers, leaflets, and event collateral"    },
+      { name: "Custom Packaging & Labels",   desc: "Branded packaging solutions for products"             },
     ],
-    cta: { label: "Get a Print Quote", href: "/services/branded-merchandise" },
-    stat: { value: "50+", label: "Print Categories" },
+    cta: { label: "Explore Printing Services", href: "/services/printing-services"  },
+    stat: { value: "50+",    label: "Print Categories"  },
   },
   {
     id: "automation",
@@ -73,15 +71,15 @@ const services = [
     description:
       "We design and develop tailor-made software systems that eliminate manual processes, reduce errors, and scale with your business. From POS terminals to full enterprise platforms — we build it.",
     subServices: [
-      { name: "Point of Sale (POS) Systems",   desc: "Smart, fast POS for retail, restaurants, and hospitality"  },
-      { name: "E-Commerce Platforms",          desc: "Full-featured online stores with payment integration"       },
-      { name: "School Management Systems",     desc: "Admissions, academics, fees, and parent communication"     },
-      { name: "Hospital & Clinic Systems",     desc: "Patient records, appointments, billing, and pharmacy"       },
-      { name: "Financial & Accounting Systems",desc: "Invoicing, payroll, reporting, and tax management"          },
-      { name: "Custom Enterprise Platforms",   desc: "Bespoke solutions for any industry and any scale"           },
+      { name: "Point of Sale (POS) Systems",    desc: "Smart, fast POS for retail, restaurants, and hospitality" },
+      { name: "E-Commerce Platforms",           desc: "Full-featured online stores with payment integration"      },
+      { name: "School Management Systems",      desc: "Admissions, academics, fees, and parent communication"    },
+      { name: "Hospital & Clinic Systems",      desc: "Patient records, appointments, billing, and pharmacy"      },
+      { name: "Financial & Accounting Systems", desc: "Invoicing, payroll, reporting, and tax management"         },
+      { name: "Custom Enterprise Platforms",    desc: "Bespoke solutions for any industry and any scale"          },
     ],
-    cta: { label: "Explore Business Systems", href: "/services/pos-systems" },
-    stat: { value: "80+", label: "Systems Built" },
+    cta: { label: "Explore Business Systems", href: "/services/business-automation" },
+    stat: { value: "80+",    label: "Systems Built"     },
   },
   {
     id: "data",
@@ -91,19 +89,17 @@ const services = [
     description:
       "We help businesses understand what their data is telling them. From real-time dashboards to in-depth analytics and database architecture, we provide the intelligence layer your decisions deserve.",
     subServices: [
-      { name: "Business Intelligence Dashboards", desc: "Live, interactive dashboards for every department"      },
-      { name: "Data Analytics & Reporting",       desc: "Identify trends, opportunities, and risks in your data" },
-      { name: "Database Design & Management",     desc: "Scalable, optimised databases built for growth"         },
-      { name: "Data Migration & Integration",     desc: "Connect disparate systems into a single source of truth" },
-      { name: "Predictive Analytics",             desc: "Forecast demand, churn, and business outcomes"           },
-      { name: "Data Strategy Consulting",         desc: "Roadmaps for becoming a truly data-driven organisation"  },
+      { name: "BI Dashboards",           desc: "Live, interactive dashboards for every department"           },
+      { name: "Data Analytics",          desc: "Identify trends, opportunities, and risks in your data"      },
+      { name: "Database Management",     desc: "Scalable, optimised databases built for growth"              },
+      { name: "Data Migration",          desc: "Connect disparate systems into a single source of truth"     },
+      { name: "Predictive Analytics",    desc: "Forecast demand, churn, and business outcomes"               },
+      { name: "Data Strategy",           desc: "Roadmaps to becoming a truly data-driven organisation"       },
     ],
-    cta: { label: "Explore Data Services", href: "/services/bi-dashboards" },
-    stat: { value: "40+", label: "Analytics Projects" },
+    cta: { label: "Explore Data Services", href: "/services/data-intelligence"   },
+    stat: { value: "40+",    label: "Analytics Projects" },
   },
 ];
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export function ServicesOverview() {
   const [activeService, setActiveService] = useState(0);
@@ -129,7 +125,7 @@ export function ServicesOverview() {
           </p>
         </div>
 
-        {/* Service tabs — horizontal pill selector */}
+        {/* Service tabs */}
         <div className="flex flex-wrap gap-2 justify-center mb-12">
           {services.map((svc, idx) => (
             <button
@@ -156,7 +152,6 @@ export function ServicesOverview() {
             >
               <span>{svc.icon}</span>
               <span className="hidden sm:inline">{svc.title.split(" ").slice(0, 2).join(" ")}</span>
-              <span className="sm:hidden">{svc.icon}</span>
             </button>
           ))}
         </div>
@@ -164,9 +159,9 @@ export function ServicesOverview() {
         {/* Active service panel */}
         <div
           key={active.id}
-          className="grid lg:grid-cols-2 gap-10 items-start p-8 lg:p-12 rounded-3xl border border-gray-100 bg-gray-50/50 transition-all"
+          className="grid lg:grid-cols-2 gap-10 items-start p-8 lg:p-12 rounded-3xl border border-gray-100 bg-gray-50/50"
         >
-          {/* Left: description + sub-services */}
+          {/* Left */}
           <div>
             <div className="flex items-center gap-4 mb-5">
               <div
@@ -188,7 +183,8 @@ export function ServicesOverview() {
             </p>
 
             <div className="flex items-center gap-6">
-              <a
+              {/* ── CTA: Link to the service page ── */}
+              <Link
                 href={active.cta.href}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-semibold transition-all"
                 style={{ backgroundColor: BRAND }}
@@ -199,7 +195,7 @@ export function ServicesOverview() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
-              </a>
+              </Link>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{active.stat.value}</p>
                 <p className="text-xs text-gray-500">{active.stat.label}</p>
@@ -214,10 +210,7 @@ export function ServicesOverview() {
                 key={sub.name}
                 className="bg-white p-4 rounded-xl border border-gray-100 hover:border-[#44B6E8]/40 transition-all group hover:shadow-sm"
               >
-                <div
-                  className="w-5 h-5 rounded-full mb-2"
-                  style={{ backgroundColor: BRAND_LIGHT }}
-                />
+                <div className="w-5 h-5 rounded-full mb-2" style={{ backgroundColor: BRAND_LIGHT }} />
                 <p className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-[#44B6E8] transition-colors">
                   {sub.name}
                 </p>
@@ -227,21 +220,14 @@ export function ServicesOverview() {
           </div>
         </div>
 
-        {/* Bottom CTA strip */}
+        {/* Bottom CTA */}
         <div className="mt-14 text-center">
-          <p className="text-gray-500 mb-4 text-sm">
-            Not sure which service fits your needs?
-          </p>
+          <p className="text-gray-500 mb-4 text-sm">Not sure which service fits your needs?</p>
           <a
             href="#contact"
-            onClick={(e) => {
-              e.preventDefault();
-              document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" });
-            }}
+            onClick={(e) => { e.preventDefault(); document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" }); }}
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-white font-semibold transition-all"
             style={{ background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})` }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "0.9")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
           >
             Let&apos;s Talk — Free Consultation
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

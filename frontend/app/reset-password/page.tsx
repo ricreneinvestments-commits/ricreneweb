@@ -8,7 +8,8 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 function ResetForm() {
   const params   = useSearchParams();
   const router   = useRouter();
-  const token    = params.get("token") || "";
+  const token = params.get("token") || "";
+  const uid = params.get("uid") || "";
   const [password, setPassword]   = useState("");
   const [confirm, setConfirm]     = useState("");
   const [loading, setLoading]     = useState(false);
@@ -24,7 +25,11 @@ function ResetForm() {
       const res = await fetch(`${API}/api/auth/reset-password/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({
+        uid,
+        token,
+        password,
+      }),
       });
       if (res.ok) { setSuccess(true); setTimeout(() => router.push("/login"), 3000); }
       else { const d = await res.json(); setError(d.detail || "Invalid or expired link."); }
@@ -32,7 +37,7 @@ function ResetForm() {
     finally { setLoading(false); }
   };
 
-  if (!token) return (
+  if (!token || !uid) return (
     <div className="text-center">
       <p className="text-red-600 text-sm mb-4">Invalid reset link.</p>
       <Link href="/forgot-password" className="text-red-600 font-medium hover:underline">Request a new one →</Link>
